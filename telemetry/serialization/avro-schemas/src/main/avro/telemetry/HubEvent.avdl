@@ -42,7 +42,7 @@ enum DeviceTypeAvro {
 	record ScenarioConditionAvro {
 		string sensor_id;
 		ConditionTypeAvro type;
-		ConditionOperationAvro opertaion;
+		ConditionOperationAvro operation;
 		union { null, int, boolean } value = null;
 	}
 
