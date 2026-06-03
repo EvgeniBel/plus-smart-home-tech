@@ -2,6 +2,7 @@ package ru.yandex.practicum.config.kafka;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.avro.specific.SpecificRecordBase;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
@@ -10,10 +11,10 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class KafkaEventProducer {
 
-    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final KafkaTemplate<String, SpecificRecordBase> kafkaTemplate;
 
-    public void send(String topic, Object event) {
-        log.info("Отправка события в topic {}: {}", topic, event);
-        kafkaTemplate.send(topic, event);
+    public void send(String topic, String key, SpecificRecordBase event) {
+        log.info("Отправка события в топик {} с ключом {}: {}", topic, key, event);
+        kafkaTemplate.send(topic, key, event);
     }
 }

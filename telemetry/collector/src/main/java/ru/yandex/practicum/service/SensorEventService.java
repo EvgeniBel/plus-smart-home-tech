@@ -4,8 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.dto.sensor.SensorEventDto;
 import ru.yandex.practicum.config.kafka.KafkaEventProducer;
+import ru.yandex.practicum.dto.sensor.SensorEventDto;
 import ru.yandex.practicum.dto.sensor.UnknownSensorEventDto;
 import ru.yandex.practicum.mapper.SensorEventMapper;
 
@@ -17,7 +17,7 @@ public class SensorEventService {
     private final KafkaEventProducer kafkaProducer;
     private final SensorEventMapper mapper;
 
-    @Value("${kafka.topics.sensor-events:sensor-events}")
+    @Value("${kafka.topics.sensor-events:telemetry.sensors.v1}")
     private String sensorEventsTopic;
 
     public void sendSensorEvent(SensorEventDto event) {
@@ -33,14 +33,14 @@ public class SensorEventService {
         try {
             var avroEvent = mapper.toAvro(event);
 
-            if (avroEvent == null) {
-                log.error("Не удалось сконвертировать событие датчика в Avro: id={}", event.getId());
-                throw new RuntimeException("Ошибка конвертации события датчика");
-            }
+            // Используем hubId как ключ для партиционирования
+            String key = avroEvent.getHubId();
 
-            kafkaProducer.send(sensorEventsTopic, avroEvent);
-            log.info("Событие датчика успешно отправлено в Kafka: id={}, тип={}",
-                    event.getId(), event.getType());
+            // Отправляем с ключом
+            kafkaProducer.send(sensorEventsTopic, key, avroEvent);
+
+            log.info("Событие датчика успешно отправлено в Kafka: id={}, тип={}, hubId={}, ключ={}",
+                    event.getId(), event.getType(), event.getHubId(), key);
         } catch (Exception e) {
             log.error("Ошибка при обработке события датчика: id={}, тип={}",
                     event.getId(), event.getType(), e);
