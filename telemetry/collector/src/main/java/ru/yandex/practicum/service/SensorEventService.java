@@ -33,10 +33,13 @@ public class SensorEventService {
         try {
             var avroEvent = mapper.toAvro(event);
 
-            // Используем hubId как ключ для партиционирования
-            String key = avroEvent.getHubId();
+            // Добавить проверку
+            if (avroEvent == null) {
+                log.error("Ошибка конвертации события датчика в Avro: id={}", event.getId());
+                throw new RuntimeException("Ошибка конвертации события датчика");
+            }
 
-            // Отправляем с ключом
+            String key = avroEvent.getHubId();
             kafkaProducer.send(sensorEventsTopic, key, avroEvent);
 
             log.info("Событие датчика успешно отправлено в Kafka: id={}, тип={}, hubId={}, ключ={}",

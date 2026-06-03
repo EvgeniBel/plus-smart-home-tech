@@ -1,7 +1,6 @@
 package ru.yandex.practicum.mapper;
 
-
-
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.dto.kafka.KafkaSensorEvent;
 import ru.yandex.practicum.dto.sensor.*;
@@ -11,9 +10,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Component
+@Slf4j
 public class SensorEventMapper {
 
-    // Существующий метод для Avro (если нужен)
     public SensorEventAvro toAvro(SensorEventDto dto) {
         if (dto == null) {
             return null;
@@ -26,10 +25,15 @@ public class SensorEventMapper {
 
         if (dto instanceof ClimateSensorEventDto) {
             ClimateSensorEventDto climateDto = (ClimateSensorEventDto) dto;
+
+            int tempC = climateDto.getTemperatureC() != null ? climateDto.getTemperatureC() : 0;
+            int humidity = climateDto.getHumidity() != null ? climateDto.getHumidity() : 0;
+            int co2 = climateDto.getCo2Level() != null ? climateDto.getCo2Level() : 0;
+
             ClimateSensorAvro climateData = ClimateSensorAvro.newBuilder()
-                    .setTemperatureC(climateDto.getTemperature() != null ? climateDto.getTemperature().intValue() : 0)
-                    .setHumidity(climateDto.getHumidity() != null ? climateDto.getHumidity().intValue() : 0)
-                    .setCo2Level(climateDto.getCo2Level() != null ? climateDto.getCo2Level() : 0)
+                    .setTemperatureC(tempC)
+                    .setHumidity(humidity)
+                    .setCo2Level(co2)
                     .build();
             builder.setPayload(climateData);
 
@@ -86,8 +90,8 @@ public class SensorEventMapper {
 
         if (dto instanceof ClimateSensorEventDto) {
             ClimateSensorEventDto climateDto = (ClimateSensorEventDto) dto;
-            payload.put("temperature_c", climateDto.getTemperature() != null ? climateDto.getTemperature().intValue() : 0);
-            payload.put("humidity", climateDto.getHumidity() != null ? climateDto.getHumidity().intValue() : 0);
+            payload.put("temperature_c", climateDto.getTemperatureC() != null ? climateDto.getTemperatureC() : 0);
+            payload.put("humidity", climateDto.getHumidity() != null ? climateDto.getHumidity() : 0);
             payload.put("co2_level", climateDto.getCo2Level() != null ? climateDto.getCo2Level() : 0);
 
         } else if (dto instanceof LightSensorEventDto) {

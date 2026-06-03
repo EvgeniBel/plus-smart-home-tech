@@ -18,12 +18,6 @@
             <groupId>org.springframework.kafka</groupId>
             <artifactId>spring-kafka</artifactId>
         </dependency>
-        <!-- Avro сериализатор для Kafka -->
-        <dependency>
-            <groupId>io.confluent</groupId>
-            <artifactId>kafka-avro-serializer</artifactId>
-            <version>7.4.0</version>
-        </dependency>
 
         <!-- Avro схемы -->
         <dependency>

@@ -6,8 +6,8 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class ClimateSensorEventDto extends SensorEventDto {
-    private Double temperature;
-    private Double humidity;
+    private Integer temperatureC;
+    private Integer humidity;
     private Integer co2Level;
 
     @Override
