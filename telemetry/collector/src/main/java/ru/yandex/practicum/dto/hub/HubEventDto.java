@@ -3,11 +3,14 @@ package ru.yandex.practicum.dto.hub;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import jakarta.validation.constraints.NotBlank;
+import lombok.AccessLevel;
 import lombok.Data;
+import lombok.experimental.FieldDefaults;
 
 import java.time.Instant;
 
 @Data
+@FieldDefaults(level = AccessLevel.PRIVATE)
 @JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,
         include = JsonTypeInfo.As.EXISTING_PROPERTY,
@@ -23,9 +26,9 @@ import java.time.Instant;
 public abstract class HubEventDto {
 
     @NotBlank(message = "Hub ID не может быть пустым")
-    private String hubId;
+    String hubId;
 
-    private Instant timestamp = Instant.now();
+    Instant timestamp = Instant.now();
 
     public abstract String getType();
 }

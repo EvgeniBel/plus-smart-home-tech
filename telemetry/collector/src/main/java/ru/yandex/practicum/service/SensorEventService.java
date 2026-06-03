@@ -47,7 +47,7 @@ public class SensorEventService {
         } catch (Exception e) {
             log.error("Ошибка при обработке события датчика: id={}, тип={}",
                     event.getId(), event.getType(), e);
-            throw new RuntimeException("Не удалось обработать событие датчика: " + event.getId(), e);
+            throw new RuntimeException(String.format("Не удалось обработать событие датчика: %s",event.getId()), e);
         }
     }
 }

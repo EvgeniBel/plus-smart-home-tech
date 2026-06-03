@@ -26,7 +26,7 @@ public class CollectorAvroSerializer implements Serializer<SpecificRecordBase> {
             }
             return out.toByteArray();
         } catch (IOException e) {
-            throw new SerializationException("Ошибка сериализации данных для топика " + topic + ".", e);
+            throw new SerializationException(String.format("Ошибка сериализации данных для топика '%s'.", topic), e);
         }
     }
 }

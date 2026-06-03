@@ -5,28 +5,29 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.experimental.FieldDefaults;
 
 import java.util.List;
 
 @Data
+@FieldDefaults(level = AccessLevel.PRIVATE)
 @EqualsAndHashCode(callSuper = true)
 public class ScenarioAddedEventDto extends HubEventDto {
 
-    @NotBlank(message = "Scenario name не можеть быть blank")
+    @NotBlank(message = "Scenario name не может быть blank")
     @Size(min = 3, message = "Название добавленного сценария должно содержать не менее 3 символов")
-    private String name;
+    String name;
 
-    @NotNull(message = "Conditions list не можеть быть null")
-    @NotEmpty(message = "Conditions list не можеть быть empty")
+    @NotEmpty(message = "Conditions list не может быть empty")
     @Valid
-    private List<ScenarioConditionDto> conditions;
+    List<ScenarioConditionDto> conditions;
 
-    @NotNull(message = "Actions list не можеть быть null")
-    @NotEmpty(message = "Actions list не можеть быть empty")
+    @NotEmpty(message = "Actions list не может быть empty")
     @Valid
-    private List<DeviceActionDto> actions;
+    List<DeviceActionDto> actions;
 
     @Override
     public String getType() {

@@ -42,7 +42,7 @@ public class HubEventService {
         } catch (Exception e) {
             log.error("Ошибка при обработке события хаба: тип={}, hubId={}",
                     event.getType(), event.getHubId(), e);
-            throw new RuntimeException("Не удалось обработать событие хаба: " + event.getType(), e);
+            throw new RuntimeException(String.format("Не удалось обработать событие хаба: %s",event.getType()), e);
         }
     }
 }
