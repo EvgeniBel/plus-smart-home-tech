@@ -1,4 +1,5 @@
 package ru.yandex.practicum.config.kafka;
+
 import org.apache.avro.io.BinaryEncoder;
 import org.apache.avro.io.DatumWriter;
 import org.apache.avro.io.EncoderFactory;

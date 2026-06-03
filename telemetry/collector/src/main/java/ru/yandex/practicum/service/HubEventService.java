@@ -1,11 +1,12 @@
 package ru.yandex.practicum.service;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.config.kafka.KafkaEventProducer;
 import ru.yandex.practicum.dto.hub.HubEventDto;
 import ru.yandex.practicum.dto.hub.UnknownHubEventDto;
-import ru.yandex.practicum.config.kafka.KafkaEventProducer;
 import ru.yandex.practicum.mapper.HubEventMapper;
 
 @Service
