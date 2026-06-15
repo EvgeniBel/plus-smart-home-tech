@@ -1,6 +1,145 @@
 syntax = "proto3";
 
-package telemetry.message.event;
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
 
-option java_multiple_files = true;
-option java_package = "ru.yandex.practicum.grpc.telemetry.event";
+// ========== ENUMS ==========
+
+enum DeviceTypeProto {
+    MOTION_SENSOR = 0;      // датчик движения
+    TEMPERATURE_SENSOR = 1; // датчик температуры
+    LIGHT_SENSOR = 2;       // датчик освещённости
+    CLIMATE_SENSOR = 3;     // датчик контроля климата
+    SWITCH_SENSOR = 4;      // переключатель
+}
+enum ConditionTypeProto {
+    MOTION = 0;         // движение
+    LUMINOSITY = 1;     // освещённость
+    SWITCH = 2;         // состояние переключателя
+    TEMPERATURE = 3;    // температура
+    CO2LEVEL = 4;       // уровень CO2
+    HUMIDITY = 5;       // влажность
+}
+
+enum ConditionOperationProto {
+    EQUALS = 0;         // равно
+    GREATER_THAN = 1;   // больше чем
+    LOWER_THAN = 2;     // меньше чем
+}
+enum ActionTypeProto {
+  ACTIVATE = 0;
+  DEACTIVATE = 1;
+  INVERSE = 2;
+  SET_VALUE = 3;
+}
+
+
+
+// ========== SENSOR PAYLOADS ==========
+
+message MotionSensorProto {
+    int32 link_quality = 1;   // качество связи
+    bool motion = 2;          // наличие движения
+    int32 voltage = 3;        // напряжение питания
+}
+
+message TemperatureSensorProto {
+    int32 temperature_c = 1;  // температура в градусах Цельсия
+    int32 temperature_f = 2;  // температура в градусах Фаренгейта
+}
+
+message LightSensorProto {
+    int32 link_quality = 1;   // качество связи
+    int32 luminosity = 2;     // освещённость (люкс)
+}
+
+message ClimateSensorProto {
+    int32 temperature_c = 1;  // температура в градусах Цельсия
+    int32 humidity = 2;       // влажность (проценты)
+    int32 co2_level = 3;      // уровень CO2 (ppm)
+}
+
+message SwitchSensorProto {
+    bool state = 1;           // состояние переключателя (вкл/выкл)
+}
+
+// ========== SCENARIO CONDITIONS ==========
+
+message ScenarioConditionProto {
+    string sensor_id = 1;                     // идентификатор сенсора
+    ConditionTypeProto type = 2;              // тип условия (движение, температура и т.д.)
+    ConditionOperationProto operation = 3;    // операция сравнения (равно, больше, меньше)
+
+    oneof value {                             // значение для сравнения
+        bool bool_value = 4;                  // для булевых типов (MOTION, SWITCH)
+        int32 int_value = 5;                  // для числовых типов (LUMINOSITY, TEMPERATURE, CO2LEVEL, HUMIDITY)
+    }
+}
+
+// ========== SENSOR EVENT ==========
+
+message SensorEventProto {
+    string id = 1;                                // идентификатор сенсора
+    google.protobuf.Timestamp timestamp = 2;     // метка времени события
+    string hub_id = 3;                           // идентификатор связанного хаба
+
+    oneof payload {                              // конкретные данные сенсора
+        MotionSensorProto motion_sensor = 4;
+        TemperatureSensorProto temperature_sensor = 5;
+        LightSensorProto light_sensor = 6;
+        ClimateSensorProto climate_sensor = 7;
+        SwitchSensorProto switch_sensor = 8;
+    }
+}
+
+// ========== HUB EVENT PAYLOADS ==========
+message DeviceActionProto {
+  string sensor_id = 1; // идентификатор устройства
+  ActionTypeProto type = 2;
+  optional int32 value = 3;
+}
+
+message DeviceAddedEventProto {
+    string id = 1;                    // идентификатор устройства
+    DeviceTypeProto type = 2;         // тип устройства
+}
+
+message DeviceRemovedEventProto {
+    string id = 1;                    // идентификатор устройства
+}
+
+message ScenarioAddedEventProto {
+    string name = 1; // название сценария уникальное в рамках хаба
+      repeated ScenarioConditionProto condition = 2; // набор условий активации сценария
+      repeated DeviceActionProto action = 3; // набор действий при активации сценария              // идентификатор сценария
+}
+
+message ScenarioRemovedEventProto {
+    string id = 1;                    // идентификатор сценария
+}
+
+// ========== HUB EVENT ==========
+
+message HubEventProto {
+    string hub_id = 1;                // идентификатор хаба
+    google.protobuf.Timestamp timestamp = 2;  // метка времени события
+
+    oneof payload {
+        DeviceAddedEventProto device_added = 3;
+        DeviceRemovedEventProto device_removed = 4;
+        ScenarioAddedEventProto scenario_added = 5;
+        ScenarioRemovedEventProto scenario_removed = 6;
+    }
+}
+
+// ========== SERVICE ==========
+
+service CollectorController {
+    // Обработка события от сенсора
+    rpc CollectSensorEvent(SensorEventProto)
+        returns (google.protobuf.Empty);
+
+    // Обработка события от хаба
+    rpc CollectHubEvent(HubEventProto)
+        returns (google.protobuf.Empty);
+}
