@@ -1,93 +1,105 @@
 package ru.yandex.practicum.mapper;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import ru.yandex.practicum.dto.hub.*;
+import ru.yandex.practicum.grpc.telemetry.event.*;
 import ru.yandex.practicum.kafka.telemetry.event.*;
 
 import java.time.Instant;
 import java.util.stream.Collectors;
 
 @Component
+@Slf4j
 public class HubEventMapper {
 
-    public HubEventAvro toAvro(HubEventDto dto) {
-        if (dto == null) {
+    public HubEventAvro toAvro(HubEventProto proto) {
+        if (proto == null) {
             return null;
         }
 
-        Instant timestamp = dto.getTimestamp();
+        Instant timestamp = Instant.ofEpochSecond(
+                proto.getTimestamp().getSeconds(),
+                proto.getTimestamp().getNanos()
+        );
 
         HubEventAvro.Builder builder = HubEventAvro.newBuilder()
-                .setHubId(dto.getHubId())
-                .setTimestamp(timestamp);  // Instant, не long
+                .setHubId(proto.getHubId())
+                .setTimestamp(timestamp);
 
-        if (dto instanceof DeviceAddedEventDto) {
-            DeviceAddedEventDto deviceDto = (DeviceAddedEventDto) dto;
-            DeviceAddedEventAvro deviceAdded = DeviceAddedEventAvro.newBuilder()
-                    .setId(deviceDto.getId())
-                    .setType(DeviceTypeAvro.valueOf(deviceDto.getDeviceType().name()))
-                    .build();
-            builder.setPayload(deviceAdded);
+        switch (proto.getPayloadCase()) {
+            case DEVICE_ADDED:
+                DeviceAddedEventProto deviceAdded = proto.getDeviceAdded();
+                DeviceAddedEventAvro deviceAddedAvro = DeviceAddedEventAvro.newBuilder()
+                        .setId(deviceAdded.getId())
+                        .setType(DeviceTypeAvro.valueOf(deviceAdded.getType().name()))
+                        .build();
+                builder.setPayload(deviceAddedAvro);
+                break;
 
-        } else if (dto instanceof DeviceRemovedEventDto) {
-            DeviceRemovedEventDto deviceDto = (DeviceRemovedEventDto) dto;
-            DeviceRemovedEventAvro deviceRemoved = DeviceRemovedEventAvro.newBuilder()
-                    .setId(deviceDto.getId())
-                    .build();
-            builder.setPayload(deviceRemoved);
+            case DEVICE_REMOVED:
+                DeviceRemovedEventProto deviceRemoved = proto.getDeviceRemoved();
+                DeviceRemovedEventAvro deviceRemovedAvro = DeviceRemovedEventAvro.newBuilder()
+                        .setId(deviceRemoved.getId())
+                        .build();
+                builder.setPayload(deviceRemovedAvro);
+                break;
 
-        } else if (dto instanceof ScenarioAddedEventDto) {
-            ScenarioAddedEventDto scenarioDto = (ScenarioAddedEventDto) dto;
+            case SCENARIO_ADDED:
+                ScenarioAddedEventProto scenarioAdded = proto.getScenarioAdded();
 
-            var conditions = scenarioDto.getConditions().stream()
-                    .map(this::toScenarioConditionAvro)
-                    .collect(Collectors.toList());
+                var conditions = scenarioAdded.getConditionList().stream()
+                        .map(this::toScenarioConditionAvro)
+                        .collect(Collectors.toList());
 
-            var actions = scenarioDto.getActions().stream()
-                    .map(this::toDeviceActionAvro)
-                    .collect(Collectors.toList());
+                var actions = scenarioAdded.getActionList().stream()
+                        .map(this::toDeviceActionAvro)
+                        .collect(Collectors.toList());
 
-            ScenarioAddedEventAvro scenarioAdded = ScenarioAddedEventAvro.newBuilder()
-                    .setName(scenarioDto.getName())
-                    .setConditions(conditions)
-                    .setActions(actions)
-                    .build();
-            builder.setPayload(scenarioAdded);
+                ScenarioAddedEventAvro scenarioAddedAvro = ScenarioAddedEventAvro.newBuilder()
+                        .setName(scenarioAdded.getName())
+                        .setConditions(conditions)
+                        .setActions(actions)
+                        .build();
+                builder.setPayload(scenarioAddedAvro);
+                break;
 
-        } else if (dto instanceof ScenarioRemovedEventDto) {
-            ScenarioRemovedEventDto scenarioDto = (ScenarioRemovedEventDto) dto;
-            ScenarioRemovedEventAvro scenarioRemoved = ScenarioRemovedEventAvro.newBuilder()
-                    .setName(scenarioDto.getName())
-                    .build();
-            builder.setPayload(scenarioRemoved);
+            case SCENARIO_REMOVED:
+                ScenarioRemovedEventProto scenarioRemoved = proto.getScenarioRemoved();
+                ScenarioRemovedEventAvro scenarioRemovedAvro = ScenarioRemovedEventAvro.newBuilder()
+                        .setName(scenarioRemoved.getName())
+                        .build();
+                builder.setPayload(scenarioRemovedAvro);
+                break;
+
+            default:
+                log.warn("Неизвестный тип события хаба: {}", proto.getPayloadCase());
+                return null;
         }
 
         return builder.build();
     }
 
-    private ScenarioConditionAvro toScenarioConditionAvro(ScenarioConditionDto dto) {
-        Object value = dto.getValue();
-        Object avroValue = null;
-
-        if (value instanceof Integer) {
-            avroValue = value;
-        } else if (value instanceof Boolean) {
-            avroValue = value;
+    private ScenarioConditionAvro toScenarioConditionAvro(ScenarioConditionProto proto) {
+        Object value = null;
+        if (proto.hasBoolValue()) {
+            value = proto.getBoolValue();
+        } else if (proto.hasIntValue()) {
+            value = proto.getIntValue();
         }
 
         return ScenarioConditionAvro.newBuilder()
-                .setSensorId(dto.getSensorId())
-                .setType(ConditionTypeAvro.valueOf(dto.getType().name()))
-                .setOperation(ConditionOperationAvro.valueOf(dto.getOperation().name()))
-                .setValue(avroValue)
+                .setSensorId(proto.getSensorId())
+                .setType(ConditionTypeAvro.valueOf(proto.getType().name()))
+                .setOperation(ConditionOperationAvro.valueOf(proto.getOperation().name()))
+                .setValue(value)
                 .build();
     }
 
-    private DeviceActionAvro toDeviceActionAvro(DeviceActionDto dto) {
+    private DeviceActionAvro toDeviceActionAvro(DeviceActionProto proto) {
         return DeviceActionAvro.newBuilder()
-                .setSensorId(dto.getSensorId())
-                .setType(ActionTypeAvro.valueOf(dto.getType().name()))
-                .setValue(dto.getValue())
+                .setSensorId(proto.getSensorId())
+                .setType(ActionTypeAvro.valueOf(proto.getType().name()))
+                .setValue(proto.hasValue() ? proto.getValue() : null)
                 .build();
     }
 }
