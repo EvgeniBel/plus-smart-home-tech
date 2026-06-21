@@ -2,7 +2,7 @@ package ru.yandex.practicum.mapper;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import ru.yandex.practicum.grpc.telemetry.event.*;
+import telemetry.service.collector.*;
 import ru.yandex.practicum.kafka.telemetry.event.*;
 
 import java.time.Instant;
@@ -66,7 +66,7 @@ public class HubEventMapper {
             case SCENARIO_REMOVED:
                 ScenarioRemovedEventProto scenarioRemoved = proto.getScenarioRemoved();
                 ScenarioRemovedEventAvro scenarioRemovedAvro = ScenarioRemovedEventAvro.newBuilder()
-                        .setName(scenarioRemoved.getName())
+                        .setName(scenarioRemoved.getName())  // ✅ Исправлено
                         .build();
                 builder.setPayload(scenarioRemovedAvro);
                 break;
@@ -81,10 +81,11 @@ public class HubEventMapper {
 
     private ScenarioConditionAvro toScenarioConditionAvro(ScenarioConditionProto proto) {
         Object value = null;
-        if (proto.hasBoolValue()) {
-            value = proto.getBoolValue();
-        } else if (proto.hasIntValue()) {
-            value = proto.getIntValue();
+
+        if (proto.hasIntValue()) {
+            value = proto.getIntValue().getValue();
+        } else if (proto.hasBoolValue()) {
+            value = proto.getBoolValue().getValue();
         }
 
         return ScenarioConditionAvro.newBuilder()
@@ -96,10 +97,17 @@ public class HubEventMapper {
     }
 
     private DeviceActionAvro toDeviceActionAvro(DeviceActionProto proto) {
+        Integer value = null;
+
+        // ✅ Проверяем наличие значения
+        if (proto.hasValue()) {
+            value = proto.getValue().getValue();
+        }
+
         return DeviceActionAvro.newBuilder()
                 .setSensorId(proto.getSensorId())
                 .setType(ActionTypeAvro.valueOf(proto.getType().name()))
-                .setValue(proto.hasValue() ? proto.getValue() : null)
+                .setValue(value)
                 .build();
     }
 }

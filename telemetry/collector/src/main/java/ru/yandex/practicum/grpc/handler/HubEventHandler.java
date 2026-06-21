@@ -1,6 +1,6 @@
 package ru.yandex.practicum.grpc.handler;
 
-import ru.yandex.practicum.grpc.telemetry.event.HubEventProto;
+import telemetry.service.collector.HubEventProto;
 
 public interface HubEventHandler {
     HubEventProto.PayloadCase getMessageType();

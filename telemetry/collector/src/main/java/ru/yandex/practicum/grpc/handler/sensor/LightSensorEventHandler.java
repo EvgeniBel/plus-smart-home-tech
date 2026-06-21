@@ -4,8 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.grpc.handler.SensorEventHandler;
-import ru.yandex.practicum.grpc.telemetry.event.LightSensorProto;
-import ru.yandex.practicum.grpc.telemetry.event.SensorEventProto;
+import telemetry.service.collector.LightSensorProto;
+import telemetry.service.collector.SensorEventProto;
 import ru.yandex.practicum.service.SensorEventService;
 
 @Component
