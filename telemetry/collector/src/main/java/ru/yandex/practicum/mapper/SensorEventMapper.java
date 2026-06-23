@@ -2,7 +2,7 @@ package ru.yandex.practicum.mapper;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import ru.yandex.practicum.grpc.telemetry.collector.*;
+import telemetry.service.collector.*;
 import ru.yandex.practicum.kafka.telemetry.event.*;
 
 @Component
