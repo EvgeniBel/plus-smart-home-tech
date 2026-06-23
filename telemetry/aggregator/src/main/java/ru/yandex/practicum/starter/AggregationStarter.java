@@ -3,9 +3,12 @@ package ru.yandex.practicum.starter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.Consumer;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
+import org.apache.kafka.clients.producer.Producer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.kafka.telemetry.event.SensorEventAvro;
@@ -13,7 +16,9 @@ import ru.yandex.practicum.kafka.telemetry.event.SensorsSnapshotAvro;
 import ru.yandex.practicum.service.AggregatorService;
 
 import java.time.Duration;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -37,6 +42,9 @@ public class AggregationStarter {
     private long shutdownTimeout;
 
     private final ExecutorService executor = Executors.newFixedThreadPool(5);
+    private final Map<TopicPartition, OffsetAndMetadata> currentOffsets = new ConcurrentHashMap<>();
+
+    private volatile boolean running = true;
 
     public void start() {
         log.info("Запуск AggregationStarter...");
@@ -45,7 +53,7 @@ public class AggregationStarter {
             consumer.subscribe(java.util.List.of(sensorsTopic));
             log.info("Подписка на топик: {}", sensorsTopic);
 
-            while (true) {
+            while (running) {
                 ConsumerRecords<String, SensorEventAvro> records =
                         consumer.poll(Duration.ofMillis(pollTimeout));
 
@@ -55,7 +63,8 @@ public class AggregationStarter {
 
                 log.info("Получено {} записей из топика {}", records.count(), sensorsTopic);
 
-                for (var record : records) {
+                int count = 0;
+                for (ConsumerRecord<String, SensorEventAvro> record : records) {
                     try {
                         SensorEventAvro event = record.value();
                         log.debug("Обработка события: id={}, hubId={}, timestamp={}",
@@ -76,18 +85,25 @@ public class AggregationStarter {
                             }
                         }
 
+                        // ✅ Управление оффсетами
+                        manageOffsets(record, count);
+
                     } catch (Exception e) {
                         log.error("Ошибка обработки записи: offset={}", record.offset(), e);
                     }
+                    count++;
                 }
 
-                try {
-                    consumer.commitSync();
-                    log.debug("Смещения зафиксированы");
-                } catch (Exception e) {
-                    log.error("Ошибка фиксации смещений", e);
-                }
+                // ✅ Асинхронный коммит
+                consumer.commitAsync(currentOffsets, (offsets, exception) -> {
+                    if (exception != null) {
+                        log.warn("Ошибка во время фиксации оффсетов: {}", offsets, exception);
+                    } else {
+                        log.debug("Оффсеты зафиксированы асинхронно");
+                    }
+                });
 
+                // Сбрасываем буфер продюсера
                 executor.submit(() -> {
                     try {
                         producer.flush();
@@ -106,33 +122,46 @@ public class AggregationStarter {
         }
     }
 
+    // ✅ Управление оффсетами (как в примере)
+    private void manageOffsets(ConsumerRecord<String, SensorEventAvro> record, int count) {
+        currentOffsets.put(
+                new TopicPartition(record.topic(), record.partition()),
+                new OffsetAndMetadata(record.offset() + 1)
+        );
+
+        if (count % 10 == 0) {
+            consumer.commitAsync(currentOffsets, (offsets, exception) -> {
+                if (exception != null) {
+                    log.warn("Ошибка во время фиксации оффсетов: {}", offsets, exception);
+                }
+            });
+        }
+    }
+
     private void shutdown() {
         log.info("Завершение работы AggregationStarter...");
 
         try {
-            // ✅ Правильное завершение ExecutorService
-            executor.shutdown();
+            // ✅ Синхронный коммит перед закрытием (как в примере)
             try {
-                if (!executor.awaitTermination(shutdownTimeout, TimeUnit.MILLISECONDS)) {
-                    log.warn("ExecutorService не завершился за {} мс, принудительно завершаем", shutdownTimeout);
-                    executor.shutdownNow();
-                    if (!executor.awaitTermination(shutdownTimeout / 2, TimeUnit.MILLISECONDS)) {
-                        log.warn("ExecutorService не завершился после принудительного останова");
-                    }
-                }
-            } catch (InterruptedException e) {
-                log.warn("Ожидание завершения ExecutorService было прервано", e);
-                executor.shutdownNow();
-                Thread.currentThread().interrupt();
-            }
-
-            try {
-                consumer.commitSync();
-                log.info("Смещения зафиксированы перед завершением");
+                consumer.commitSync(currentOffsets);
+                log.info("Смещения зафиксированы синхронно перед завершением");
             } catch (Exception e) {
                 log.error("Ошибка фиксации смещений при завершении", e);
             }
 
+            // Завершаем ExecutorService
+            executor.shutdown();
+            try {
+                if (!executor.awaitTermination(shutdownTimeout, TimeUnit.MILLISECONDS)) {
+                    executor.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                executor.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+
+            // Сбрасываем буфер продюсера
             try {
                 producer.flush();
                 log.info("Буфер продюсера сброшен");
@@ -161,6 +190,7 @@ public class AggregationStarter {
 
     public void stop() {
         log.info("Получен сигнал остановки AggregationStarter");
+        running = false;
         consumer.wakeup();
     }
 }
