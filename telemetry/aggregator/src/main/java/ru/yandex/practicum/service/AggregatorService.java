@@ -62,7 +62,7 @@ public class AggregatorService {
         });
 
         try {
-            Thread.sleep(100);
+            Thread.sleep(200);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }

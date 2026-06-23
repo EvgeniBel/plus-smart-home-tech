@@ -68,6 +68,12 @@ public class AggregationStarter {
                             executor.submit(() -> {
                                 aggregatorService.sendSnapshot(producer, snapshotOpt.get());
                             });
+
+                            try {
+                                Thread.sleep(50);
+                            } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                            }
                         }
 
                     } catch (Exception e) {
