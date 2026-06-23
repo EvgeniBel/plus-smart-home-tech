@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.kafka.telemetry.event.SensorEventAvro;
 import ru.yandex.practicum.kafka.telemetry.event.SensorsSnapshotAvro;
@@ -12,6 +13,7 @@ import ru.yandex.practicum.model.SnapshotState;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
@@ -20,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class AggregatorService {
 
     private final Map<String, SnapshotState> snapshots = new ConcurrentHashMap<>();
+
     @Value("${kafka.topics.snapshots:telemetry.snapshots.v1}")
     private String snapshotsTopic;
 
@@ -35,6 +38,8 @@ public class AggregatorService {
         return snapshot.update(event);
     }
 
+    // ✅ АСИНХРОННАЯ ОТПРАВКА
+    @Async
     public void sendSnapshot(Producer<String, SensorsSnapshotAvro> producer, SensorsSnapshotAvro snapshot) {
         if (snapshot == null) {
             return;
@@ -46,11 +51,13 @@ public class AggregatorService {
         ProducerRecord<String, SensorsSnapshotAvro> record =
                 new ProducerRecord<>(snapshotsTopic, hubId, snapshot);
 
+        // Отправляем с callback
         producer.send(record, (metadata, exception) -> {
             if (exception != null) {
                 log.error("Ошибка отправки снапшота для хаба {}", hubId, exception);
             } else {
-                log.debug("Снапшот для хаба {} отправлен", hubId);
+                log.debug("Снапшот для хаба {} отправлен: offset={}, partition={}",
+                        hubId, metadata.offset(), metadata.partition());
             }
         });
     }

@@ -14,6 +14,9 @@ import ru.yandex.practicum.service.AggregatorService;
 
 import java.time.Duration;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
@@ -33,21 +36,16 @@ public class AggregationStarter {
     @Value("${app.aggregation.shutdown-timeout:5000}")
     private long shutdownTimeout;
 
-    /**
-     * Запускает процесс агрегации данных.
-     * Работает в бесконечном цикле до завершения приложения.
-     */
+    private final ExecutorService executor = Executors.newFixedThreadPool(5);
+
     public void start() {
         log.info("Запуск AggregationStarter...");
 
         try {
-            // Подписываемся на топик с событиями датчиков
             consumer.subscribe(java.util.List.of(sensorsTopic));
             log.info("Подписка на топик: {}", sensorsTopic);
 
-            // Бесконечный цикл опроса
             while (true) {
-                // Получаем записи из Kafka
                 ConsumerRecords<String, SensorEventAvro> records =
                         consumer.poll(Duration.ofMillis(pollTimeout));
 
@@ -57,20 +55,19 @@ public class AggregationStarter {
 
                 log.info("Получено {} записей из топика {}", records.count(), sensorsTopic);
 
-                // Обрабатываем каждую запись
                 for (var record : records) {
                     try {
                         SensorEventAvro event = record.value();
                         log.debug("Обработка события: id={}, hubId={}, timestamp={}",
                                 event.getId(), event.getHubId(), event.getTimestamp());
 
-                        // Обрабатываем событие через сервис
                         Optional<SensorsSnapshotAvro> snapshotOpt =
                                 aggregatorService.processEvent(event);
 
-                        // Если снапшот обновился — отправляем в Kafka
                         if (snapshotOpt.isPresent()) {
-                            aggregatorService.sendSnapshot(producer, snapshotOpt.get());
+                            executor.submit(() -> {
+                                aggregatorService.sendSnapshot(producer, snapshotOpt.get());
+                            });
                         }
 
                     } catch (Exception e) {
@@ -78,7 +75,6 @@ public class AggregationStarter {
                     }
                 }
 
-                // Фиксируем смещения после успешной обработки
                 try {
                     consumer.commitSync();
                     log.debug("Смещения зафиксированы");
@@ -86,33 +82,44 @@ public class AggregationStarter {
                     log.error("Ошибка фиксации смещений", e);
                 }
 
-                // Сбрасываем буфер продюсера (отправляем все накопленные сообщения)
-                try {
-                    producer.flush();
-                } catch (Exception e) {
-                    log.error("Ошибка сброса буфера продюсера", e);
-                }
+                executor.submit(() -> {
+                    try {
+                        producer.flush();
+                    } catch (Exception e) {
+                        log.error("Ошибка сброса буфера продюсера", e);
+                    }
+                });
             }
 
         } catch (WakeupException e) {
-            // Игнорируем — это сигнал к завершению работы
             log.info("Получен сигнал Wakeup, завершаем работу...");
         } catch (Exception e) {
             log.error("Критическая ошибка в цикле агрегации", e);
         } finally {
-            // Корректное завершение
             shutdown();
         }
     }
 
-    /**
-     * Корректно завершает работу: фиксирует смещения и закрывает продюсер/консьюмер.
-     */
     private void shutdown() {
         log.info("Завершение работы AggregationStarter...");
 
         try {
-            // Фиксируем последние смещения
+            // ✅ Правильное завершение ExecutorService
+            executor.shutdown();
+            try {
+                if (!executor.awaitTermination(shutdownTimeout, TimeUnit.MILLISECONDS)) {
+                    log.warn("ExecutorService не завершился за {} мс, принудительно завершаем", shutdownTimeout);
+                    executor.shutdownNow();
+                    if (!executor.awaitTermination(shutdownTimeout / 2, TimeUnit.MILLISECONDS)) {
+                        log.warn("ExecutorService не завершился после принудительного останова");
+                    }
+                }
+            } catch (InterruptedException e) {
+                log.warn("Ожидание завершения ExecutorService было прервано", e);
+                executor.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+
             try {
                 consumer.commitSync();
                 log.info("Смещения зафиксированы перед завершением");
@@ -120,7 +127,6 @@ public class AggregationStarter {
                 log.error("Ошибка фиксации смещений при завершении", e);
             }
 
-            // Сбрасываем буфер продюсера
             try {
                 producer.flush();
                 log.info("Буфер продюсера сброшен");
@@ -129,7 +135,6 @@ public class AggregationStarter {
             }
 
         } finally {
-            // Закрываем ресурсы
             try {
                 consumer.close();
                 log.info("Консьюмер закрыт");
@@ -148,10 +153,6 @@ public class AggregationStarter {
         log.info("AggregationStarter завершён");
     }
 
-    /**
-     * Сигнал для остановки цикла опроса.
-     * Вызывается извне (например, при завершении приложения).
-     */
     public void stop() {
         log.info("Получен сигнал остановки AggregationStarter");
         consumer.wakeup();

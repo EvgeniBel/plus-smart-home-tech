@@ -4,10 +4,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.scheduling.annotation.EnableAsync;
 import ru.yandex.practicum.starter.AggregationStarter;
 
 @Slf4j
 @SpringBootApplication
+@EnableAsync
 public class AggregatorApplication {
 
     public static void main(String[] args) {

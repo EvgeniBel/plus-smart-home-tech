@@ -10,6 +10,11 @@ spring:
       group-id: aggregator
       auto-offset-reset: earliest
       enable-auto-commit: false
+      max-poll-records: 50  # ✅ Уменьшено для снижения нагрузки
+    producer:
+      batch-size: 8192      # ✅ Уменьшен размер батча
+      linger-ms: 50         # ✅ Уменьшена задержка
+      max-in-flight-requests-per-connection: 10
 
 kafka:
   topics:
@@ -23,6 +28,6 @@ app:
 
 logging:
   level:
-    ru.yandex.practicum: DEBUG
-    org.springframework.kafka: INFO
+    ru.yandex.practicum: INFO
+    org.springframework.kafka: WARN
     org.apache.kafka: WARN
