@@ -60,6 +60,13 @@ public class AggregatorService {
                         hubId, metadata.offset(), metadata.partition());
             }
         });
+
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
     }
 
     public int getSnapshotsCount() {
