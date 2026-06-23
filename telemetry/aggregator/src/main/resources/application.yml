@@ -1,0 +1,28 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: aggregator
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: aggregator
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+
+kafka:
+  topics:
+    sensors: telemetry.sensors.v1
+    snapshots: telemetry.snapshots.v1
+
+app:
+  aggregation:
+    poll-timeout: 1000
+    shutdown-timeout: 5000
+
+logging:
+  level:
+    ru.yandex.practicum: DEBUG
+    org.springframework.kafka: INFO
+    org.apache.kafka: WARN
