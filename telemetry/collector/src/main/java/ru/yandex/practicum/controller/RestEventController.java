@@ -16,7 +16,7 @@ import ru.yandex.practicum.service.SensorEventService;
 @RequestMapping("/events")
 @RequiredArgsConstructor
 @Slf4j
-public class EventController {
+public class RestEventController {
 
     private final SensorEventService sensorEventService;
     private final HubEventService hubEventService;
