@@ -2,7 +2,7 @@ package ru.yandex.practicum.mapper;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import telemetry.service.collector.*;
+import ru.yandex.practicum.grpc.telemetry.collector.*;
 import ru.yandex.practicum.kafka.telemetry.event.*;
 
 import java.time.Instant;
@@ -111,9 +111,9 @@ public class HubEventMapper {
                 proto.getSensorId(), proto.hasIntValue(), proto.hasBoolValue());
 
         if (proto.hasIntValue()) {
-            value = proto.getIntValue().getValue();
+            value = proto.getIntValue();
         } else if (proto.hasBoolValue()) {
-            value = proto.getBoolValue().getValue();
+            value = proto.getBoolValue();
         }
 
         ScenarioConditionAvro result = ScenarioConditionAvro.newBuilder()
@@ -138,7 +138,7 @@ public class HubEventMapper {
                 proto.getSensorId(), proto.hasValue());
 
         if (proto.hasValue()) {
-            value = proto.getValue().getValue();
+            value = proto.getValue();
         }
 
         DeviceActionAvro result = DeviceActionAvro.newBuilder()

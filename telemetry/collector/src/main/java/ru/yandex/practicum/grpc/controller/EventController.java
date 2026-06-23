@@ -7,9 +7,9 @@ import lombok.extern.slf4j.Slf4j;
 import net.devh.boot.grpc.server.service.GrpcService;
 import ru.yandex.practicum.grpc.handler.HubEventHandler;
 import ru.yandex.practicum.grpc.handler.SensorEventHandler;
-import telemetry.service.collector.CollectorControllerGrpc;
-import telemetry.service.collector.HubEventProto;
-import telemetry.service.collector.SensorEventProto;
+import ru.yandex.practicum.grpc.telemetry.collector.CollectorControllerGrpc;
+import ru.yandex.practicum.grpc.telemetry.collector.HubEventProto;
+import ru.yandex.practicum.grpc.telemetry.collector.SensorEventProto;
 
 import java.util.Map;
 import java.util.Set;

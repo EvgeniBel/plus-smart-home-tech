@@ -1,12 +1,11 @@
 syntax = "proto3";
 
-package telemetry.service.collector;
+package ru.yandex.practicum.grpc.telemetry.collector;
 
 import "google/protobuf/timestamp.proto";
-import "google/protobuf/wrappers.proto";  // ← Добавить!
 
 option java_multiple_files = true;
-option java_package = "telemetry.service.collector";
+option java_package = "ru.yandex.practicum.grpc.telemetry.collector";
 
 // ========== ENUMS ==========
 
@@ -46,10 +45,10 @@ message ScenarioConditionProto {
     string sensor_id = 1;
     ConditionTypeProto type = 2;
     ConditionOperationProto operation = 3;
-
-    // Используем Wrapper-типы для nullable полей
-    google.protobuf.Int32Value int_value = 4;
-    google.protobuf.BoolValue bool_value = 5;
+    oneof value {
+        bool bool_value = 4;
+        int32 int_value = 5;
+    }
 }
 
 // ========== DEVICE ACTIONS ==========
@@ -57,7 +56,7 @@ message ScenarioConditionProto {
 message DeviceActionProto {
     string sensor_id = 1;
     ActionTypeProto type = 2;
-    google.protobuf.Int32Value value = 3;  // Wrapper для nullable int
+    optional int32 value = 3;  // ← Используем optional
 }
 
 // ========== DEVICE EVENTS ==========

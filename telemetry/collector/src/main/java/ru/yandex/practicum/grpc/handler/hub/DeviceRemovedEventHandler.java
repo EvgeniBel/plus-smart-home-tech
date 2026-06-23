@@ -4,8 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.grpc.handler.HubEventHandler;
-import telemetry.service.collector.DeviceRemovedEventProto;
-import telemetry.service.collector.HubEventProto;
+import ru.yandex.practicum.grpc.telemetry.collector.DeviceRemovedEventProto;
+import ru.yandex.practicum.grpc.telemetry.collector.HubEventProto;
 import ru.yandex.practicum.service.HubEventService;
 
 @Component

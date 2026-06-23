@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.config.kafka.KafkaEventProducer;
 import ru.yandex.practicum.dto.sensor.SensorEventDto;
-import telemetry.service.collector.SensorEventProto;
+import ru.yandex.practicum.grpc.telemetry.collector.SensorEventProto;
 import ru.yandex.practicum.mapper.SensorEventMapper;
 
 @Service
