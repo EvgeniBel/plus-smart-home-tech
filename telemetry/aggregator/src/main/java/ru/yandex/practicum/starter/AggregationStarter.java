@@ -47,76 +47,88 @@ public class AggregationStarter {
     private volatile boolean running = true;
 
     public void start() {
-        log.info("Запуск AggregationStarter...");
+        log.info("🚀 Запуск AggregationStarter...");
 
         try {
             consumer.subscribe(java.util.List.of(sensorsTopic));
-            log.info("Подписка на топик: {}", sensorsTopic);
+            log.info("📡 Подписка на топик: {}", sensorsTopic);
 
             while (running) {
+                log.debug("⏳ Ожидание сообщений...");
+                long pollStart = System.currentTimeMillis();
+
                 ConsumerRecords<String, SensorEventAvro> records =
                         consumer.poll(Duration.ofMillis(pollTimeout));
 
+                long pollEnd = System.currentTimeMillis();
+                log.debug("⏱️ poll() занял {} мс", pollEnd - pollStart);
+
                 if (records.isEmpty()) {
+                    log.debug("📭 Нет сообщений в топике");
                     continue;
                 }
 
-                log.info("Получено {} записей из топика {}", records.count(), sensorsTopic);
+                log.info("📨 Получено {} записей из топика {}", records.count(), sensorsTopic);
 
                 int count = 0;
                 for (ConsumerRecord<String, SensorEventAvro> record : records) {
                     try {
+                        log.info("📄 Запись {}: offset={}, partition={}",
+                                count, record.offset(), record.partition());
+
                         SensorEventAvro event = record.value();
-                        log.debug("Обработка события: id={}, hubId={}, timestamp={}",
+                        log.info("📊 Событие: id={}, hubId={}, timestamp={}",
                                 event.getId(), event.getHubId(), event.getTimestamp());
 
+                        long processStart = System.currentTimeMillis();
                         Optional<SensorsSnapshotAvro> snapshotOpt =
                                 aggregatorService.processEvent(event);
+                        long processEnd = System.currentTimeMillis();
+                        log.info("⏱️ processEvent() занял {} мс", processEnd - processStart);
 
                         if (snapshotOpt.isPresent()) {
+                            log.info("🔄 Снапшот обновлён, отправка...");
+                            long sendStart = System.currentTimeMillis();
                             executor.submit(() -> {
                                 aggregatorService.sendSnapshot(producer, snapshotOpt.get());
                             });
+                            long sendEnd = System.currentTimeMillis();
+                            log.info("⏱️ Отправка в executor заняла {} мс", sendEnd - sendStart);
 
                             try {
                                 Thread.sleep(50);
                             } catch (InterruptedException e) {
                                 Thread.currentThread().interrupt();
                             }
+                        } else {
+                            log.info("⏭️ Снапшот не изменился, пропускаем");
                         }
 
-                        // ✅ Управление оффсетами
+                        // Управление оффсетами
                         manageOffsets(record, count);
 
                     } catch (Exception e) {
-                        log.error("Ошибка обработки записи: offset={}", record.offset(), e);
+                        log.error("❌ Ошибка обработки записи: offset={}", record.offset(), e);
                     }
                     count++;
                 }
 
-                // ✅ Асинхронный коммит
+                // Асинхронный коммит
+                log.debug("📝 Фиксация оффсетов...");
+                long commitStart = System.currentTimeMillis();
                 consumer.commitAsync(currentOffsets, (offsets, exception) -> {
+                    long commitEnd = System.currentTimeMillis();
                     if (exception != null) {
-                        log.warn("Ошибка во время фиксации оффсетов: {}", offsets, exception);
+                        log.error("❌ Ошибка фиксации оффсетов: {}", offsets, exception);
                     } else {
-                        log.debug("Оффсеты зафиксированы асинхронно");
-                    }
-                });
-
-                // Сбрасываем буфер продюсера
-                executor.submit(() -> {
-                    try {
-                        producer.flush();
-                    } catch (Exception e) {
-                        log.error("Ошибка сброса буфера продюсера", e);
+                        log.debug("✅ Оффсеты зафиксированы за {} мс", commitEnd - commitStart);
                     }
                 });
             }
-
         } catch (WakeupException e) {
-            log.info("Получен сигнал Wakeup, завершаем работу...");
+            log.info("⏹️ Получен сигнал Wakeup, завершаем работу...");
         } catch (Exception e) {
-            log.error("Критическая ошибка в цикле агрегации", e);
+            log.error("❌ Критическая ошибка в цикле агрегации", e);
         } finally {
             shutdown();
         }

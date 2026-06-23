@@ -42,22 +42,26 @@ public class AggregatorService {
     @Async
     public void sendSnapshot(Producer<String, SensorsSnapshotAvro> producer, SensorsSnapshotAvro snapshot) {
         if (snapshot == null) {
+            log.warn("⚠️ Попытка отправить null снапшот");
             return;
         }
 
         String hubId = snapshot.getHubId();
-        log.info("Отправка снапшота для хаба {} в топик {}", hubId, snapshotsTopic);
+        int sensorsCount = snapshot.getSensorsState().size();
+        log.info("📤 Отправка снапшота для хаба {} с {} датчиками", hubId, sensorsCount);
 
         ProducerRecord<String, SensorsSnapshotAvro> record =
                 new ProducerRecord<>(snapshotsTopic, hubId, snapshot);
 
-        // Отправляем с callback
+        long sendStart = System.currentTimeMillis();
         producer.send(record, (metadata, exception) -> {
+            long sendEnd = System.currentTimeMillis();
             if (exception != null) {
-                log.error("Ошибка отправки снапшота для хаба {}", hubId, exception);
+                log.error("❌ Ошибка отправки снапшота для хаба {} за {} мс",
+                        hubId, sendEnd - sendStart, exception);
             } else {
-                log.debug("Снапшот для хаба {} отправлен: offset={}, partition={}",
-                        hubId, metadata.offset(), metadata.partition());
+                log.info("✅ Снапшот для хаба {} отправлен за {} мс: offset={}, partition={}",
+                        hubId, sendEnd - sendStart, metadata.offset(), metadata.partition());
             }
         });
 
@@ -66,7 +70,6 @@ public class AggregatorService {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-
     }
 
     public int getSnapshotsCount() {

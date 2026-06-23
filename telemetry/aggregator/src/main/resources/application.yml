@@ -7,10 +7,10 @@ spring:
   kafka:
     bootstrap-servers: localhost:9092
     consumer:
-      group-id: aggregator-local      # ← ИЗМЕНЕНО
-      auto-offset-reset: earliest     # ← ДОБАВЛЕНО
+      group-id: aggregator-local
+      auto-offset-reset: earliest
       enable-auto-commit: false
-      max-poll-records: 20            # ← ДОБАВЛЕНО
+      max-poll-records: 20
     producer:
       batch-size: 8192
       linger-ms: 50
@@ -18,8 +18,8 @@ spring:
 
 kafka:
   topics:
-    sensors: telemetry.sensors.v1     # ← ПРОВЕРИТЬ
-    snapshots: telemetry.snapshots.v1 # ← ПРОВЕРИТЬ
+    sensors: telemetry.sensors.v1
+    snapshots: telemetry.snapshots.v1
 
 app:
   aggregation:
@@ -28,6 +28,8 @@ app:
 
 logging:
   level:
-    ru.yandex.practicum: DEBUG        # ← ВКЛЮЧИТЬ DEBUG ДЛЯ ОТЛАДКИ
+    ru.yandex.practicum: DEBUG
     org.springframework.kafka: DEBUG
     org.apache.kafka: DEBUG
+    org.apache.kafka.clients.consumer: DEBUG
+    org.apache.kafka.clients.producer: DEBUG

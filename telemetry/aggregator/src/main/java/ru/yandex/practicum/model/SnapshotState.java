@@ -21,39 +21,47 @@ public class SnapshotState {
 
     public Optional<SensorsSnapshotAvro> update(SensorEventAvro event) {
         String sensorId = event.getId();
+        long eventTimestamp = event.getTimestamp();
+
+        log.info("🔄 Обновление состояния: датчик {}, время {}", sensorId, eventTimestamp);
 
         // Конвертируем long в Instant
-        Instant eventTimestamp = Instant.ofEpochMilli(event.getTimestamp());
+        Instant eventInstant = Instant.ofEpochMilli(eventTimestamp);
 
         SensorStateAvro oldState = sensorsState.get(sensorId);
 
         if (oldState != null) {
             Instant oldTimestamp = oldState.getTimestamp();
-            if (eventTimestamp.isBefore(oldTimestamp) || eventTimestamp.equals(oldTimestamp)) {
-                log.debug("Событие от датчика {} устарело, игнорируем", sensorId);
+            if (eventInstant.isBefore(oldTimestamp) || eventInstant.equals(oldTimestamp)) {
+                log.info("⏭️ Событие от датчика {} устарело ({} < {}), игнорируем",
+                        sensorId, eventInstant, oldTimestamp);
                 return Optional.empty();
             }
             if (oldState.getData().equals(event.getPayload())) {
-                log.debug("Данные датчика {} не изменились, игнорируем", sensorId);
+                log.info("⏭️ Данные датчика {} не изменились, игнорируем", sensorId);
                 return Optional.empty();
             }
+            log.info("🔄 Данные датчика {} изменились: {} -> {}",
+                    sensorId, oldState.getData(), event.getPayload());
+        } else {
+            log.info("🆕 Новый датчик {} добавлен", sensorId);
         }
 
         // Создаём состояние с Instant
         SensorStateAvro newState = SensorStateAvro.newBuilder()
-                .setTimestamp(eventTimestamp)
+                .setTimestamp(eventInstant)
                 .setData(event.getPayload())
                 .build();
 
         sensorsState.put(sensorId, newState);
         this.hubId = event.getHubId();
 
-        if (lastUpdateTimestamp == null || eventTimestamp.isAfter(lastUpdateTimestamp)) {
-            this.lastUpdateTimestamp = eventTimestamp;
+        if (lastUpdateTimestamp == null || eventInstant.isAfter(lastUpdateTimestamp)) {
+            this.lastUpdateTimestamp = eventInstant;
         }
 
-        log.info("Снапшот для хаба {} обновлён: датчик {}, timestamp {}",
-                hubId, sensorId, eventTimestamp);
+        log.info("✅ Снапшот для хаба {} обновлён: датчик {}, timestamp {}",
+                hubId, sensorId, eventInstant);
 
         return Optional.of(buildSnapshot());
     }
