@@ -1,5 +1,7 @@
 package ru.yandex.practicum.config;
 
+import lombok.AccessLevel;
+import lombok.experimental.FieldDefaults;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.Producer;
@@ -17,13 +19,14 @@ import ru.yandex.practicum.serializer.AvroSerializer;
 import java.util.Properties;
 
 @Configuration
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class KafkaConfig {
 
     @Value("${spring.kafka.bootstrap-servers:localhost:9092}")
-    private String bootstrapServers;
+    String bootstrapServers;
 
     @Value("${spring.kafka.consumer.group-id:aggregator}")
-    private String groupId;
+    String groupId;
 
     @Bean
     public Consumer<String, SensorEventAvro> kafkaConsumer() {

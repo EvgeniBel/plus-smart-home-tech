@@ -1,14 +1,16 @@
 package ru.yandex.practicum.starter;
 
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
-import org.apache.kafka.clients.producer.Producer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.kafka.telemetry.event.SensorEventAvro;
@@ -25,25 +27,21 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class AggregationStarter {
 
-    private final Consumer<String, SensorEventAvro> consumer;
-    private final Producer<String, SensorsSnapshotAvro> producer;
-    private final AggregatorService aggregatorService;
-
+    final Consumer<String, SensorEventAvro> consumer;
+    final Producer<String, SensorsSnapshotAvro> producer;
+    final AggregatorService aggregatorService;
+    final ExecutorService executor = Executors.newFixedThreadPool(5);
+    final Map<TopicPartition, OffsetAndMetadata> currentOffsets = new ConcurrentHashMap<>();
     @Value("${kafka.topics.sensors:telemetry.sensors.v1}")
-    private String sensorsTopic;
-
+    String sensorsTopic;
     @Value("${app.aggregation.poll-timeout:1000}")
-    private long pollTimeout;
-
+    long pollTimeout;
     @Value("${app.aggregation.shutdown-timeout:5000}")
-    private long shutdownTimeout;
-
-    private final ExecutorService executor = Executors.newFixedThreadPool(5);
-    private final Map<TopicPartition, OffsetAndMetadata> currentOffsets = new ConcurrentHashMap<>();
-
-    private volatile boolean running = true;
+    long shutdownTimeout;
+    volatile boolean running = true;
 
     public void start() {
         log.info("🚀 Запуск AggregationStarter...");
@@ -74,7 +72,6 @@ public class AggregationStarter {
                             executor.submit(() -> aggregatorService.sendSnapshot(producer, snapshot));
                         }
 
-                        // Управление оффсетами
                         manageOffsets(record);
 
                     } catch (Exception e) {
@@ -82,7 +79,6 @@ public class AggregationStarter {
                     }
                 }
 
-                // Асинхронный коммит
                 consumer.commitAsync(currentOffsets, (offsets, exception) -> {
                     if (exception != null) {
                         log.error("❌ Ошибка фиксации оффсетов: {}", offsets, exception);
@@ -109,7 +105,6 @@ public class AggregationStarter {
         log.info("Завершение работы AggregationStarter...");
 
         try {
-            // Синхронный коммит перед закрытием
             try {
                 consumer.commitSync(currentOffsets);
                 log.info("Смещения зафиксированы синхронно перед завершением");
@@ -117,7 +112,6 @@ public class AggregationStarter {
                 log.error("Ошибка фиксации смещений при завершении", e);
             }
 
-            // Завершаем ExecutorService
             executor.shutdown();
             try {
                 if (!executor.awaitTermination(shutdownTimeout, TimeUnit.MILLISECONDS)) {
@@ -128,7 +122,6 @@ public class AggregationStarter {
                 Thread.currentThread().interrupt();
             }
 
-            // Сбрасываем буфер продюсера
             try {
                 producer.flush();
                 log.info("Буфер продюсера сброшен");

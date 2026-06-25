@@ -1,6 +1,8 @@
 package ru.yandex.practicum.service;
 
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -14,16 +16,14 @@ import ru.yandex.practicum.model.SnapshotState;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class AggregatorService {
 
-    private final SnapshotState snapshotState;
+    final SnapshotState snapshotState;
 
     @Value("${kafka.topics.snapshots:telemetry.snapshots.v1}")
-    private String snapshotsTopic;
+    String snapshotsTopic;
 
-    /**
-     * Обрабатывает событие датчика и возвращает снапшот, если он был обновлён
-     */
     public SensorsSnapshotAvro processEvent(SensorEventAvro event) {
         if (event == null) {
             return null;
@@ -35,9 +35,6 @@ public class AggregatorService {
         return snapshotState.update(event);
     }
 
-    /**
-     * Асинхронная отправка снапшота
-     */
     @Async
     public void sendSnapshot(Producer<String, SensorsSnapshotAvro> producer, SensorsSnapshotAvro snapshot) {
         if (snapshot == null) {

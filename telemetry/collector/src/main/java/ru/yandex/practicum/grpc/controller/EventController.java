@@ -3,6 +3,8 @@ package ru.yandex.practicum.grpc.controller;
 import com.google.protobuf.Empty;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import lombok.AccessLevel;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import net.devh.boot.grpc.server.service.GrpcService;
 import ru.yandex.practicum.grpc.handler.HubEventHandler;
@@ -18,10 +20,11 @@ import java.util.stream.Collectors;
 
 @GrpcService
 @Slf4j
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class EventController extends CollectorControllerGrpc.CollectorControllerImplBase {
 
-    private final Map<SensorEventProto.PayloadCase, SensorEventHandler> sensorEventHandlers;
-    private final Map<HubEventProto.PayloadCase, HubEventHandler> hubEventHandlers;
+    final Map<SensorEventProto.PayloadCase, SensorEventHandler> sensorEventHandlers;
+    final Map<HubEventProto.PayloadCase, HubEventHandler> hubEventHandlers;
 
     public EventController(Set<SensorEventHandler> sensorEventHandlers,
                            Set<HubEventHandler> hubEventHandlers) {

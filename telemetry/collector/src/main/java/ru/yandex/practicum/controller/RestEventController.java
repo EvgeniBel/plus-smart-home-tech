@@ -1,7 +1,9 @@
 package ru.yandex.practicum.controller;
 
 import jakarta.validation.Valid;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -16,10 +18,11 @@ import ru.yandex.practicum.service.SensorEventService;
 @RequestMapping("/events")
 @RequiredArgsConstructor
 @Slf4j
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class RestEventController {
 
-    private final SensorEventService sensorEventService;
-    private final HubEventService hubEventService;
+    final SensorEventService sensorEventService;
+    final HubEventService hubEventService;
 
     @PostMapping("/sensors")
     public String handleSensorEvent(@Valid @RequestBody SensorEventDto event) {

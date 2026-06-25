@@ -1,19 +1,27 @@
 package ru.yandex.practicum.model;
 
+import lombok.AccessLevel;
+import lombok.Data;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.kafka.telemetry.event.*;
 
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 @Slf4j
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class SnapshotState {
 
-    private final Map<String, HubState> hubStates = new ConcurrentHashMap<>();
+    final Map<String, HubState> hubStates = new ConcurrentHashMap<>();
+    final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+            .withZone(ZoneId.of("UTC"));
 
     public SensorsSnapshotAvro update(SensorEventAvro event) {
         if (event == null) {
@@ -106,10 +114,9 @@ public class SnapshotState {
         for (Map.Entry<String, SensorState> entry : sensors.entrySet()) {
             SensorState state = entry.getValue();
 
-            // Создаём SensorStateAvro с правильными методами
             SensorStateAvro sensorState = SensorStateAvro.newBuilder()
                     .setTimestamp(Instant.ofEpochMilli(state.getLastUpdateTime()))
-                    .setData(state.getPayload())  // Используем setData вместо setPayload
+                    .setData(state.getPayload())
                     .build();
 
             sensorsState.put(entry.getKey(), sensorState);
@@ -122,10 +129,19 @@ public class SnapshotState {
                 .build();
     }
 
-    @lombok.Data
+    private String formatTime(long millis) {
+        return formatter.format(Instant.ofEpochMilli(millis));
+    }
+
+    @Data
+    @FieldDefaults(level = AccessLevel.PRIVATE)
     public static class HubState {
-        private final String hubId;
-        private final Map<String, SensorState> sensors = new HashMap<>();
+        final String hubId;
+        final Map<String, SensorState> sensors = new HashMap<>();
+
+        public HubState(String hubId) {
+            this.hubId = hubId;
+        }
 
         public void updateSensor(String sensorId, SensorEventAvro event) {
             sensors.put(sensorId, new SensorState(sensorId, event));
@@ -140,11 +156,12 @@ public class SnapshotState {
         }
     }
 
-    @lombok.Data
+    @Data
+    @FieldDefaults(level = AccessLevel.PRIVATE)
     public static class SensorState {
-        private final String sensorId;
-        private final Object payload;
-        private final long lastUpdateTime;
+        final String sensorId;
+        final Object payload;
+        final long lastUpdateTime;
 
         public SensorState(String sensorId, SensorEventAvro event) {
             this.sensorId = sensorId;
