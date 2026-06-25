@@ -11,34 +11,33 @@ import ru.yandex.practicum.kafka.telemetry.event.SensorEventAvro;
 import ru.yandex.practicum.kafka.telemetry.event.SensorsSnapshotAvro;
 import ru.yandex.practicum.model.SnapshotState;
 
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class AggregatorService {
 
-    private final Map<String, SnapshotState> snapshots = new ConcurrentHashMap<>();
+    private final SnapshotState snapshotState;
 
     @Value("${kafka.topics.snapshots:telemetry.snapshots.v1}")
     private String snapshotsTopic;
 
-    public Optional<SensorsSnapshotAvro> processEvent(SensorEventAvro event) {
+    /**
+     * Обрабатывает событие датчика и возвращает снапшот, если он был обновлён
+     */
+    public SensorsSnapshotAvro processEvent(SensorEventAvro event) {
         if (event == null) {
-            return Optional.empty();
+            return null;
         }
 
         String hubId = event.getHubId();
         log.debug("Обработка события от датчика {} для хаба {}", event.getId(), hubId);
 
-        SnapshotState snapshot = snapshots.computeIfAbsent(hubId, k -> new SnapshotState());
-        return snapshot.update(event);
+        return snapshotState.update(event);
     }
 
-    // ✅ АСИНХРОННАЯ ОТПРАВКА
+    /**
+     * Асинхронная отправка снапшота
+     */
     @Async
     public void sendSnapshot(Producer<String, SensorsSnapshotAvro> producer, SensorsSnapshotAvro snapshot) {
         if (snapshot == null) {
@@ -70,9 +69,5 @@ public class AggregatorService {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-    }
-
-    public int getSnapshotsCount() {
-        return snapshots.size();
     }
 }
