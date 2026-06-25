@@ -8,8 +8,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.config.kafka.KafkaEventProducer;
 import ru.yandex.practicum.dto.hub.HubEventDto;
-import ru.yandex.practicum.mapper.HubEventMapper;
+import ru.yandex.practicum.mapper.HubEventDtoMapper;
 import telemetry.service.collector.HubEventProto;
+import ru.yandex.practicum.kafka.telemetry.event.HubEventAvro;
+import ru.yandex.practicum.mapper.HubEventMapper;
 
 @Service
 @RequiredArgsConstructor
@@ -18,7 +20,8 @@ import telemetry.service.collector.HubEventProto;
 public class HubEventService {
 
     final KafkaEventProducer kafkaProducer;
-    final HubEventMapper mapper;
+    final HubEventMapper protoMapper;
+    final HubEventDtoMapper dtoMapper;
 
     @Value("${kafka.topics.hub-events:telemetry.hubs.v1}")
     String hubEventsTopic;
@@ -28,7 +31,17 @@ public class HubEventService {
                 event.getHubId(), event.getType());
 
         try {
-            log.info("Событие хаба получено: {}", event);
+            HubEventAvro avroEvent = dtoMapper.toAvro(event);
+
+            if (avroEvent == null) {
+                log.error("Ошибка конвертации события хаба в Avro: hubId={}", event.getHubId());
+                throw new RuntimeException("Ошибка конвертации события хаба");
+            }
+
+            String key = avroEvent.getHubId();
+            kafkaProducer.send(hubEventsTopic, key, avroEvent);
+
+            log.info("Событие хаба успешно отправлено в Kafka: hubId={}", event.getHubId());
         } catch (Exception e) {
             log.error("Ошибка при обработке события хаба: hubId={}", event.getHubId(), e);
             throw new RuntimeException("Не удалось обработать событие хаба", e);
@@ -40,7 +53,7 @@ public class HubEventService {
                 event.getHubId(), event.getPayloadCase());
 
         try {
-            var avroEvent = mapper.toAvro(event);
+            HubEventAvro avroEvent = protoMapper.toAvro(event);
 
             if (avroEvent == null) {
                 log.error("Ошибка конвертации события хаба в Avro: hubId={}", event.getHubId());
@@ -50,8 +63,7 @@ public class HubEventService {
             String key = avroEvent.getHubId();
             kafkaProducer.send(hubEventsTopic, key, avroEvent);
 
-            log.info("Событие хаба успешно отправлено в Kafka: hubId={}, ключ={}",
-                    event.getHubId(), key);
+            log.info("Событие хаба успешно отправлено в Kafka: hubId={}", event.getHubId());
         } catch (Exception e) {
             log.error("Ошибка при обработке события хаба: hubId={}", event.getHubId(), e);
             throw new RuntimeException(String.format("Не удалось обработать событие хаба: %s", event.getHubId()), e);

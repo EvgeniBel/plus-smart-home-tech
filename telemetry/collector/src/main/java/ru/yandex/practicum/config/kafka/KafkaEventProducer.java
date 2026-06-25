@@ -6,7 +6,10 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.specific.SpecificRecordBase;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Component;
+
+import java.util.concurrent.CompletableFuture;
 
 @Component
 @RequiredArgsConstructor
@@ -18,6 +21,18 @@ public class KafkaEventProducer {
 
     public void send(String topic, String key, SpecificRecordBase event) {
         log.info("Отправка события в топик {} с ключом {}: {}", topic, key, event);
-        kafkaTemplate.send(topic, key, event);
+
+        CompletableFuture<SendResult<String, SpecificRecordBase>> future =
+                kafkaTemplate.send(topic, key, event);
+
+        future.whenComplete((result, ex) -> {
+            if (ex != null) {
+                log.error("Ошибка отправки события в топик {} с ключом {}", topic, key, ex);
+            } else {
+                log.info("Событие успешно отправлено в топик {}: offset={}, partition={}",
+                        topic, result.getRecordMetadata().offset(),
+                        result.getRecordMetadata().partition());
+            }
+        });
     }
 }
