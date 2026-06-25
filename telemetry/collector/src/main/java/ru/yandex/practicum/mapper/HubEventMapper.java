@@ -1,9 +1,11 @@
 package ru.yandex.practicum.mapper;
 
+import lombok.AccessLevel;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import telemetry.service.collector.*;
 import ru.yandex.practicum.kafka.telemetry.event.*;
+import telemetry.service.collector.*;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -11,6 +13,7 @@ import java.util.stream.Collectors;
 
 @Component
 @Slf4j
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class HubEventMapper {
 
     public HubEventAvro toAvro(HubEventProto proto) {
@@ -66,7 +69,6 @@ public class HubEventMapper {
                         .map(this::toDeviceActionAvro)
                         .collect(Collectors.toList());
 
-                // Проверяем, что списки не null
                 if (conditions == null) conditions = new ArrayList<>();
                 if (actions == null) actions = new ArrayList<>();
 
@@ -94,10 +96,7 @@ public class HubEventMapper {
                 return null;
         }
 
-        HubEventAvro result = builder.build();
-        log.info("HubEventAvro успешно создан: hubId={}, payload={}",
-                result.getHubId(), result.getPayload());
-        return result;
+        return builder.build();
     }
 
     private ScenarioConditionAvro toScenarioConditionAvro(ScenarioConditionProto proto) {
@@ -116,15 +115,12 @@ public class HubEventMapper {
             value = proto.getBoolValue();
         }
 
-        ScenarioConditionAvro result = ScenarioConditionAvro.newBuilder()
+        return ScenarioConditionAvro.newBuilder()
                 .setSensorId(proto.getSensorId())
                 .setType(ConditionTypeAvro.valueOf(proto.getType().name()))
                 .setOperation(ConditionOperationAvro.valueOf(proto.getOperation().name()))
                 .setValue(value)
                 .build();
-        log.debug("ScenarioConditionAvro создан: sensorId={}, value={}",
-                result.getSensorId(), result.getValue());
-        return result;
     }
 
     private DeviceActionAvro toDeviceActionAvro(DeviceActionProto proto) {
@@ -141,13 +137,10 @@ public class HubEventMapper {
             value = proto.getValue();
         }
 
-        DeviceActionAvro result = DeviceActionAvro.newBuilder()
+        return DeviceActionAvro.newBuilder()
                 .setSensorId(proto.getSensorId())
                 .setType(ActionTypeAvro.valueOf(proto.getType().name()))
                 .setValue(value)
                 .build();
-        log.debug("DeviceActionAvro создан: sensorId={}, value={}",
-                result.getSensorId(), result.getValue());
-        return result;
     }
 }

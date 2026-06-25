@@ -1,12 +1,15 @@
 package ru.yandex.practicum.mapper;
 
+import lombok.AccessLevel;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import telemetry.service.collector.*;
 import ru.yandex.practicum.kafka.telemetry.event.*;
+import telemetry.service.collector.*;
 
 @Component
 @Slf4j
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class SensorEventMapper {
 
     public SensorEventAvro toAvro(SensorEventProto proto) {
