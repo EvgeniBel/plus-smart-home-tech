@@ -14,18 +14,11 @@
     <artifactId>analyzer</artifactId>
     <packaging>jar</packaging>
 
-    <repositories>
-        <repository>
-            <id>central</id>
-            <url>https://repo.maven.apache.org/maven2</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
+    <properties>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
 
     <dependencies>
         <!-- Spring Boot -->
@@ -59,7 +52,7 @@
             <version>1.0-SNAPSHOT</version>
         </dependency>
 
-        <!-- PROTO SCHEMAS для gRPC -->
+        <!-- Proto Schemas -->
         <dependency>
             <groupId>ru.yandex.practicum</groupId>
             <artifactId>proto-schemas</artifactId>
@@ -110,9 +103,11 @@
 
     <build>
         <plugins>
+            <!-- spring-boot-maven-plugin -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>3.3.2</version>
                 <configuration>
                     <mainClass>ru.yandex.practicum.AnalyzerApplication</mainClass>
                 </configuration>
