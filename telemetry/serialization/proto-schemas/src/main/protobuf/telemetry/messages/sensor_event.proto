@@ -6,6 +6,7 @@ import "google/protobuf/timestamp.proto";
 
 option java_multiple_files = true;
 option java_package = "telemetry.service.collector";
+option java_outer_classname = "SensorEventProtoOuter";
 
 // ========== SENSOR PAYLOADS ==========
 

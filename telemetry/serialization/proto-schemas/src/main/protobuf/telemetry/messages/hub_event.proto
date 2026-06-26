@@ -6,8 +6,11 @@ import "google/protobuf/timestamp.proto";
 
 option java_multiple_files = true;
 option java_package = "telemetry.service.collector";
+option java_outer_classname = "HubEventProtoOuter";
 
-// ========== ENUMS ==========
+// ============================================
+// ENUMS
+// ============================================
 
 enum DeviceTypeProto {
     MOTION_SENSOR = 0;
@@ -39,7 +42,9 @@ enum ActionTypeProto {
     SET_VALUE = 3;
 }
 
-// ========== SCENARIO CONDITIONS ==========
+// ============================================
+// SCENARIO CONDITIONS
+// ============================================
 
 message ScenarioConditionProto {
     string sensor_id = 1;
@@ -51,15 +56,19 @@ message ScenarioConditionProto {
     }
 }
 
-// ========== DEVICE ACTIONS ==========
+// ============================================
+// DEVICE ACTIONS
+// ============================================
 
 message DeviceActionProto {
     string sensor_id = 1;
     ActionTypeProto type = 2;
-    optional int32 value = 3;  // ← Используем optional
+    int32 value = 3;  // optional убрали, используем int32
 }
 
-// ========== DEVICE EVENTS ==========
+// ============================================
+// DEVICE EVENTS
+// ============================================
 
 message DeviceAddedEventProto {
     string id = 1;
@@ -70,7 +79,9 @@ message DeviceRemovedEventProto {
     string id = 1;
 }
 
-// ========== SCENARIO EVENTS ==========
+// ============================================
+// SCENARIO EVENTS
+// ============================================
 
 message ScenarioAddedEventProto {
     string name = 1;
@@ -82,7 +93,9 @@ message ScenarioRemovedEventProto {
     string name = 1;
 }
 
-// ========== HUB EVENT ==========
+// ============================================
+// HUB EVENT
+// ============================================
 
 message HubEventProto {
     string hub_id = 1;
@@ -93,4 +106,35 @@ message HubEventProto {
         ScenarioAddedEventProto scenario_added = 5;
         ScenarioRemovedEventProto scenario_removed = 6;
     }
+}
+
+// ============================================
+// HUB ROUTER MESSAGES
+// ============================================
+
+message DeviceActionRequest {
+    string hub_id = 1;
+    string scenario_name = 2;
+    DeviceActionProto action = 3;
+    google.protobuf.Timestamp timestamp = 4;
+}
+
+message DeviceActionResponse {
+    bool success = 1;
+    string message = 2;
+    google.protobuf.Timestamp timestamp = 3;
+}
+
+message HubCommand {
+    string hub_id = 1;
+    string command = 2;
+    map<string, string> parameters = 3;
+    google.protobuf.Timestamp timestamp = 4;
+}
+
+message CommandStatus {
+    string command_id = 1;
+    bool success = 2;
+    string error_message = 3;
+    google.protobuf.Timestamp completed_at = 4;
 }

@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package telemetry.service.collector;
+
+import "google/protobuf/empty.proto";
+import "telemetry/messages/hub_event.proto";
+
+option java_multiple_files = true;
+option java_package = "ru.yandex.practicum.grpc.telemetry.hubrouter";
+
+// ============================================================
+// Hub Router Service - отправка команд на хаб
+// ============================================================
+
+service HubRouterController {
+    // Отправить действие на устройство через хаб
+    rpc HandleDeviceAction (DeviceActionRequest) returns (google.protobuf.Empty);
+
+    // Отправить команду на хаб (опционально)
+    rpc SendHubCommand (HubCommand) returns (CommandStatus);
+}
