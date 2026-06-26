@@ -63,7 +63,7 @@ message ScenarioConditionProto {
 message DeviceActionProto {
     string sensor_id = 1;
     ActionTypeProto type = 2;
-    int32 value = 3;  // optional убрали, используем int32
+    optional int32 value = 3;
 }
 
 // ============================================

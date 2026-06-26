@@ -1,10 +1,8 @@
 package ru.yandex.practicum.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+import lombok.experimental.FieldDefaults;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -17,25 +15,26 @@ import java.util.Map;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class Scenario {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    Long id;
 
     @Column(name = "hub_id")
-    private String hubId;
+    String hubId;
 
     @Column(name = "name")
-    private String name;
+    String name;
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "scenario_conditions")
     @MapKeyColumn(name = "sensor_id")
-    private Map<String, Condition> conditions = new HashMap<>();
+    Map<String, Condition> conditions = new HashMap<>();
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "scenario_actions")
     @MapKeyColumn(name = "sensor_id")
-    private Map<String, Action> actions = new HashMap<>();
+    Map<String, Action> actions = new HashMap<>();
 }

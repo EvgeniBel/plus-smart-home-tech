@@ -14,7 +14,7 @@ import ru.yandex.practicum.model.Condition;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ConditionMapper {
 
-    private EnumMapper enumMapper;
+    EnumMapper enumMapper;
 
     public Condition fromAvro(ScenarioConditionAvro avro) {
         if (avro == null) {

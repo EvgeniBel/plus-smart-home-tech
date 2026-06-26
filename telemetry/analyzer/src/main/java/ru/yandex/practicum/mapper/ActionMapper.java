@@ -14,7 +14,7 @@ import ru.yandex.practicum.model.Action;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ActionMapper {
 
-    private EnumMapper enumMapper;
+    EnumMapper enumMapper;
 
     public Action fromAvro(DeviceActionAvro avro) {
         if (avro == null) {

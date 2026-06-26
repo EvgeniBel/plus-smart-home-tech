@@ -1,8 +1,12 @@
 package ru.yandex.practicum.mapper;
 
 import org.springframework.stereotype.Component;
-import ru.yandex.practicum.kafka.telemetry.event.*;
-import ru.yandex.practicum.model.*;
+import ru.yandex.practicum.kafka.telemetry.event.ActionTypeAvro;
+import ru.yandex.practicum.kafka.telemetry.event.ConditionOperationAvro;
+import ru.yandex.practicum.kafka.telemetry.event.ConditionTypeAvro;
+import ru.yandex.practicum.model.ActionType;
+import ru.yandex.practicum.model.ConditionOperation;
+import ru.yandex.practicum.model.ConditionType;
 
 @Component
 public class EnumMapper {

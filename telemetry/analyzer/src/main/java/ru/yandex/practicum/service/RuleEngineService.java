@@ -4,7 +4,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.kafka.telemetry.event.*;
-import ru.yandex.practicum.model.*;
+import ru.yandex.practicum.model.Condition;
+import ru.yandex.practicum.model.ConditionType;
+import ru.yandex.practicum.model.Scenario;
 import ru.yandex.practicum.repository.ScenarioRepository;
 
 import java.util.Map;
