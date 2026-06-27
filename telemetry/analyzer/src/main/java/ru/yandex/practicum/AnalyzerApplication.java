@@ -20,7 +20,7 @@ public class AnalyzerApplication {
 
         SnapshotProcessor snapshotProcessor = context.getBean(SnapshotProcessor.class);
         HubEventProcessor hubEventProcessor = context.getBean(HubEventProcessor.class);
-        
+
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             log.info("Получен сигнал завершения, останавливаем Analyzer...");
             snapshotProcessor.stop();

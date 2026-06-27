@@ -21,8 +21,20 @@ public class HubRouterClientService {
     @GrpcClient("hub-router")
     private HubRouterControllerGrpc.HubRouterControllerBlockingStub hubRouterClient;
 
+    public boolean isReady() {
+        return hubRouterClient != null;
+    }
+
     public void sendAction(String hubId, String scenarioName, String sensorId, Action action) {
+        if (hubRouterClient == null) {
+            log.error("❌ gRPC клиент не инициализирован!");
+            return;
+        }
+
         try {
+            log.info("📤 Отправка действия в Hub Router: hubId={}, scenarioName={}, sensorId={}, actionType={}",
+                    hubId, scenarioName, sensorId, action.getType());
+
             DeviceActionRequest request = DeviceActionRequest.newBuilder()
                     .setHubId(hubId)
                     .setScenarioName(scenarioName)
@@ -37,10 +49,16 @@ public class HubRouterClientService {
                             .build())
                     .build();
 
+            log.debug("📦 Запрос: {}", request);
+
             hubRouterClient.handleDeviceAction(request);
-            log.info("✅ Действие отправлено: sensorId={}, type={}", sensorId, action.getType());
+            log.info("✅ Действие успешно отправлено в Hub Router");
+
         } catch (Exception e) {
-            log.error("❌ Ошибка отправки действия: sensorId={}", sensorId, e);
+            log.error("❌ Ошибка отправки действия в Hub Router: sensorId={}, type={}",
+                    sensorId, action.getType(), e);
+            // Пробрасываем исключение дальше, чтобы внешний слой знал об ошибке
+            throw new RuntimeException("Failed to send action to Hub Router", e);
         }
     }
 }

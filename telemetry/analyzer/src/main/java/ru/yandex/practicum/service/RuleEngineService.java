@@ -7,6 +7,7 @@ import ru.yandex.practicum.kafka.telemetry.event.*;
 import ru.yandex.practicum.model.*;
 import ru.yandex.practicum.repository.ScenarioRepository;
 
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -21,10 +22,27 @@ public class RuleEngineService {
         String hubId = snapshot.getHubId();
         Map<String, SensorStateAvro> sensorsState = snapshot.getSensorsState();
 
-        scenarioRepository.findByHubId(hubId).stream()
-                .filter(scenario -> !scenario.getConditions().isEmpty())
-                .filter(scenario -> checkAllConditions(scenario, sensorsState))
-                .forEach(scenario -> executeScenario(hubId, scenario, sensorsState));
+        log.info("📊 Обработка снапшота для хаба: {}, датчиков: {}", hubId, sensorsState.size());
+        log.debug("📊 Состояние датчиков: {}", sensorsState.keySet());
+
+        List<Scenario> scenarios = scenarioRepository.findByHubId(hubId);
+        log.info("🔍 Найдено сценариев для хаба {}: {}", hubId, scenarios.size());
+
+        scenarios.stream()
+                .filter(scenario -> {
+                    log.debug("🔍 Проверка сценария: {}, условий: {}",
+                            scenario.getName(), scenario.getConditions().size());
+                    return !scenario.getConditions().isEmpty();
+                })
+                .filter(scenario -> {
+                    boolean conditionsMet = checkAllConditions(scenario, sensorsState);
+                    log.info("🔍 Сценарий '{}' - условия выполнены: {}", scenario.getName(), conditionsMet);
+                    return conditionsMet;
+                })
+                .forEach(scenario -> {
+                    log.info("⚡ Выполнение сценария: hubId={}, name={}", hubId, scenario.getName());
+                    executeScenario(hubId, scenario, sensorsState);
+                });
     }
 
     private boolean checkAllConditions(Scenario scenario, Map<String, SensorStateAvro> sensorsState) {
