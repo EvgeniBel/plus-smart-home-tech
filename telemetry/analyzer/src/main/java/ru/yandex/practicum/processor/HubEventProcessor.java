@@ -13,6 +13,8 @@ import ru.yandex.practicum.kafka.telemetry.event.*;
 import ru.yandex.practicum.mapper.ActionMapper;
 import ru.yandex.practicum.mapper.ConditionMapper;
 import ru.yandex.practicum.model.*;
+import ru.yandex.practicum.repository.ActionRepository;        // Добавить импорт
+import ru.yandex.practicum.repository.ConditionRepository;    // Добавить импорт
 import ru.yandex.practicum.repository.ScenarioRepository;
 import ru.yandex.practicum.repository.SensorRepository;
 
@@ -28,11 +30,15 @@ public class HubEventProcessor implements Runnable {
     private final KafkaConsumer<String, HubEventAvro> hubEventConsumer;
     private final SensorRepository sensorRepository;
     private final ScenarioRepository scenarioRepository;
+    private final ConditionRepository conditionRepository;  // Добавить
+    private final ActionRepository actionRepository;        // Добавить
     private final ConditionMapper conditionMapper;
     private final ActionMapper actionMapper;
     private final AtomicBoolean running = new AtomicBoolean(true);
+
     @Value("${kafka.topics.hubs:telemetry.hubs.v1}")
     private String hubsTopic;
+
     @Value("${app.analyzer.poll-timeout-hub:1000}")
     private long pollTimeout;
 
@@ -97,6 +103,7 @@ public class HubEventProcessor implements Runnable {
             log.warn("⚠️ Неизвестный тип события: {}", payload.getClass().getSimpleName());
         }
     }
+
     @Transactional
     private void handleDeviceAdded(String hubId, DeviceAddedEventAvro event) {
         String deviceId = event.getId();
@@ -113,6 +120,7 @@ public class HubEventProcessor implements Runnable {
         sensorRepository.save(sensor);
         log.info("✅ Устройство {} добавлено в хаб {}", deviceId, hubId);
     }
+
     @Transactional
     private void handleDeviceRemoved(String hubId, DeviceRemovedEventAvro event) {
         String deviceId = event.getId();
@@ -127,6 +135,7 @@ public class HubEventProcessor implements Runnable {
                 () -> log.warn("⚠️ Устройство {} не найдено в хабе {}", deviceId, hubId)
         );
     }
+
     @Transactional
     private void handleScenarioAdded(String hubId, ScenarioAddedEventAvro event) {
         String name = event.getName();
@@ -157,6 +166,9 @@ public class HubEventProcessor implements Runnable {
                     continue;
                 }
 
+                // ✅ Сохраняем Condition перед использованием
+                condition = conditionRepository.save(condition);
+
                 ScenarioCondition sc = new ScenarioCondition();
                 sc.setScenario(scenario);
                 sc.setSensor(sensor);
@@ -184,6 +196,9 @@ public class HubEventProcessor implements Runnable {
                     continue;
                 }
 
+                // ✅ Сохраняем Action перед использованием
+                action = actionRepository.save(action);
+
                 ScenarioAction sa = new ScenarioAction();
                 sa.setScenario(scenario);
                 sa.setSensor(sensor);
@@ -198,6 +213,7 @@ public class HubEventProcessor implements Runnable {
         log.info("✅ Сценарий '{}' добавлен в хаб {}. Условий: {}, Действий: {}",
                 name, hubId, scenario.getConditions().size(), scenario.getActions().size());
     }
+
     @Transactional
     private void handleScenarioRemoved(String hubId, ScenarioRemovedEventAvro event) {
         String name = event.getName();
