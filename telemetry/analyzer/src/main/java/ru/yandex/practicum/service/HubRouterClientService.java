@@ -2,7 +2,6 @@ package ru.yandex.practicum.service;
 
 import com.google.protobuf.Empty;
 import com.google.protobuf.Timestamp;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.stereotype.Service;
@@ -13,31 +12,38 @@ import telemetry.service.collector.ActionTypeProto;
 import telemetry.service.collector.DeviceActionProto;
 import telemetry.service.collector.DeviceActionRequest;
 
+import jakarta.annotation.PostConstruct;
 import java.time.Instant;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class HubRouterClientService {
 
     @GrpcClient("hub-router")
     private HubRouterControllerGrpc.HubRouterControllerBlockingStub hubRouterClient;
 
-    public boolean isReady() {
-        return hubRouterClient != null;
+    @PostConstruct
+    public void init() {
+        if (hubRouterClient != null) {
+            log.info("✅ gRPC клиент Hub Router успешно инициализирован");
+        } else {
+            log.error("❌ gRPC клиент Hub Router НЕ инициализирован!");
+            log.error("   Проверьте настройки в application.yml:");
+            log.error("   grpc.client.hub-router.address = static://localhost:59090");
+            log.error("   grpc.client.hub-router.negotiationType = plaintext");
+        }
     }
 
     public void sendAction(String hubId, String scenarioName, String sensorId, Action action) {
         if (hubRouterClient == null) {
-            log.error("❌ gRPC клиент не инициализирован!");
+            log.error("❌ gRPC клиент не инициализирован! Действие не отправлено: sensorId={}", sensorId);
             return;
         }
 
         try {
-            log.info("📤 Отправка действия в Hub Router: hubId={}, scenarioName={}, sensorId={}, actionType={}",
+            log.info("📤 Отправка действия в Hub Router: hubId={}, scenario={}, sensorId={}, type={}",
                     hubId, scenarioName, sensorId, action.getType());
 
-            // Преобразуем ActionType модели в ActionTypeProto
             ActionTypeProto actionTypeProto = convertToProto(action.getType());
 
             DeviceActionRequest request = DeviceActionRequest.newBuilder()
@@ -54,11 +60,8 @@ public class HubRouterClientService {
                             .build())
                     .build();
 
-            log.debug("📦 Запрос: {}", request);
-
             Empty response = hubRouterClient.handleDeviceAction(request);
-
-            log.info("✅ Действие успешно отправлено в Hub Router");
+            log.info("✅ Действие успешно отправлено в Hub Router: sensorId={}", sensorId);
 
         } catch (Exception e) {
             log.error("❌ Ошибка отправки действия в Hub Router: sensorId={}, type={}",
@@ -72,12 +75,12 @@ public class HubRouterClientService {
             throw new IllegalArgumentException("Action type cannot be null");
         }
 
-        return switch (actionType) {
-            case ACTIVATE -> ActionTypeProto.ACTIVATE;
-            case DEACTIVATE -> ActionTypeProto.DEACTIVATE;
-            case INVERSE -> ActionTypeProto.INVERSE;
-            case SET_VALUE -> ActionTypeProto.SET_VALUE;
-            default -> throw new IllegalArgumentException("Unknown action type: " + actionType);
-        };
+        switch (actionType) {
+            case ACTIVATE: return ActionTypeProto.ACTIVATE;
+            case DEACTIVATE: return ActionTypeProto.DEACTIVATE;
+            case INVERSE: return ActionTypeProto.INVERSE;
+            case SET_VALUE: return ActionTypeProto.SET_VALUE;
+            default: throw new IllegalArgumentException("Unknown action type: " + actionType);
+        }
     }
 }
