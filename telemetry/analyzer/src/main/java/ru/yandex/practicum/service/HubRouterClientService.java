@@ -1,9 +1,8 @@
 package ru.yandex.practicum.service;
 
 import com.google.protobuf.Empty;
-import com.google.protobuf.Timestamp;
 import lombok.extern.slf4j.Slf4j;
-import net.devh.boot.grpc.client.inject.GrpcClient;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.grpc.telemetry.hubrouter.HubRouterControllerGrpc;
 import ru.yandex.practicum.model.Action;
@@ -19,7 +18,7 @@ import java.time.Instant;
 @Service
 public class HubRouterClientService {
 
-    @GrpcClient("hub-router")
+    @Autowired
     private HubRouterControllerGrpc.HubRouterControllerBlockingStub hubRouterClient;
 
     @PostConstruct
@@ -44,17 +43,15 @@ public class HubRouterClientService {
             log.info("📤 Отправка действия в Hub Router: hubId={}, scenario={}, sensorId={}, type={}",
                     hubId, scenarioName, sensorId, action.getType());
 
-            ActionTypeProto actionTypeProto = convertToProto(action.getType());
-
             DeviceActionRequest request = DeviceActionRequest.newBuilder()
                     .setHubId(hubId)
                     .setScenarioName(scenarioName)
                     .setAction(DeviceActionProto.newBuilder()
                             .setSensorId(sensorId)
-                            .setType(actionTypeProto)
+                            .setType(convertToProto(action.getType()))
                             .setValue(action.getValue() != null ? action.getValue().intValue() : 0)
                             .build())
-                    .setTimestamp(Timestamp.newBuilder()
+                    .setTimestamp(com.google.protobuf.Timestamp.newBuilder()
                             .setSeconds(Instant.now().getEpochSecond())
                             .setNanos(Instant.now().getNano())
                             .build())
