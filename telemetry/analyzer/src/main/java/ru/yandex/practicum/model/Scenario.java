@@ -15,6 +15,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)  // Добавьте
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class Scenario {
 

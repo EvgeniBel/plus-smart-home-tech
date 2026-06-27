@@ -13,6 +13,8 @@ import lombok.experimental.FieldDefaults;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class Sensor {
 

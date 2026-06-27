@@ -18,11 +18,12 @@ public class Action {
     private Long id;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private ActionType type;
 
-    private Integer value;
+    private Double value;
 
-    public Action(ActionType type, Integer value) {
+    public Action(ActionType type, Double value) {
         this.type = type;
         this.value = value;
     }

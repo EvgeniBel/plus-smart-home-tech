@@ -10,6 +10,7 @@ import lombok.experimental.FieldDefaults;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString(exclude = {"scenario", "sensor", "condition"})
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ScenarioCondition {
 

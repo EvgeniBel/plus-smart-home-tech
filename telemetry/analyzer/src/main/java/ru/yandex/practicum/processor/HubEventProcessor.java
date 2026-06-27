@@ -8,6 +8,7 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.errors.WakeupException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.kafka.telemetry.event.*;
 import ru.yandex.practicum.mapper.ActionMapper;
 import ru.yandex.practicum.mapper.ConditionMapper;
@@ -96,7 +97,7 @@ public class HubEventProcessor implements Runnable {
             log.warn("⚠️ Неизвестный тип события: {}", payload.getClass().getSimpleName());
         }
     }
-
+    @Transactional
     private void handleDeviceAdded(String hubId, DeviceAddedEventAvro event) {
         String deviceId = event.getId();
         log.info("🆕 Добавление устройства: hubId={}, deviceId={}", hubId, deviceId);
@@ -112,7 +113,7 @@ public class HubEventProcessor implements Runnable {
         sensorRepository.save(sensor);
         log.info("✅ Устройство {} добавлено в хаб {}", deviceId, hubId);
     }
-
+    @Transactional
     private void handleDeviceRemoved(String hubId, DeviceRemovedEventAvro event) {
         String deviceId = event.getId();
         log.info("🗑️ Удаление устройства: hubId={}, deviceId={}", hubId, deviceId);
@@ -126,55 +127,78 @@ public class HubEventProcessor implements Runnable {
                 () -> log.warn("⚠️ Устройство {} не найдено в хабе {}", deviceId, hubId)
         );
     }
-
+    @Transactional
     private void handleScenarioAdded(String hubId, ScenarioAddedEventAvro event) {
         String name = event.getName();
         log.info("📝 Добавление сценария: hubId={}, name={}", hubId, name);
 
-        Optional<Scenario> existing = scenarioRepository.findByHubIdAndName(hubId, name);
-        existing.ifPresent(scenarioRepository::delete);
+        // Удаляем старый сценарий, если существует
+        scenarioRepository.findByHubIdAndName(hubId, name)
+                .ifPresent(scenarioRepository::delete);
 
         Scenario scenario = new Scenario();
         scenario.setHubId(hubId);
         scenario.setName(name);
 
+        // Добавляем условия
         if (event.getConditions() != null && !event.getConditions().isEmpty()) {
-            event.getConditions().forEach(c -> {
-                Condition condition = conditionMapper.fromAvro(c);
-                if (condition != null) {
-                    Sensor sensor = sensorRepository.findByIdAndHubId(c.getSensorId(), hubId).orElse(null);
-                    if (sensor != null) {
-                        ScenarioCondition sc = new ScenarioCondition();
-                        sc.setScenario(scenario);
-                        sc.setSensor(sensor);
-                        sc.setCondition(condition);
-                        scenario.getConditions().add(sc);
-                    }
+            for (ScenarioConditionAvro conditionAvro : event.getConditions()) {
+                Condition condition = conditionMapper.fromAvro(conditionAvro);
+                if (condition == null) {
+                    log.warn("⚠️ Пропущено условие для датчика {}", conditionAvro.getSensorId());
+                    continue;
                 }
-            });
+
+                Sensor sensor = sensorRepository
+                        .findByIdAndHubId(conditionAvro.getSensorId(), hubId)
+                        .orElse(null);
+                if (sensor == null) {
+                    log.warn("⚠️ Датчик {} не найден в хабе {}", conditionAvro.getSensorId(), hubId);
+                    continue;
+                }
+
+                ScenarioCondition sc = new ScenarioCondition();
+                sc.setScenario(scenario);
+                sc.setSensor(sensor);
+                sc.setCondition(condition);
+                scenario.getConditions().add(sc);
+                log.debug("✅ Добавлено условие: датчик={}, тип={}",
+                        sensor.getId(), condition.getType());
+            }
         }
 
+        // Добавляем действия
         if (event.getActions() != null && !event.getActions().isEmpty()) {
-            event.getActions().forEach(a -> {
-                Action action = actionMapper.fromAvro(a);
-                if (action != null) {
-                    Sensor sensor = sensorRepository.findByIdAndHubId(a.getSensorId(), hubId).orElse(null);
-                    if (sensor != null) {
-                        ScenarioAction sa = new ScenarioAction();
-                        sa.setScenario(scenario);
-                        sa.setSensor(sensor);
-                        sa.setAction(action);
-                        scenario.getActions().add(sa);
-                    }
+            for (DeviceActionAvro actionAvro : event.getActions()) {
+                Action action = actionMapper.fromAvro(actionAvro);
+                if (action == null) {
+                    log.warn("⚠️ Пропущено действие для датчика {}", actionAvro.getSensorId());
+                    continue;
                 }
-            });
+
+                Sensor sensor = sensorRepository
+                        .findByIdAndHubId(actionAvro.getSensorId(), hubId)
+                        .orElse(null);
+                if (sensor == null) {
+                    log.warn("⚠️ Датчик {} не найден в хабе {}", actionAvro.getSensorId(), hubId);
+                    continue;
+                }
+
+                ScenarioAction sa = new ScenarioAction();
+                sa.setScenario(scenario);
+                sa.setSensor(sensor);
+                sa.setAction(action);
+                scenario.getActions().add(sa);
+                log.debug("✅ Добавлено действие: датчик={}, тип={}",
+                        sensor.getId(), action.getType());
+            }
         }
 
         scenarioRepository.save(scenario);
-        log.info("✅ Сценарий {} добавлен в хаб {}. Условий: {}, Действий: {}",
+        log.info("✅ Сценарий '{}' добавлен в хаб {}. Условий: {}, Действий: {}",
                 name, hubId, scenario.getConditions().size(), scenario.getActions().size());
     }
-
+    @Transactional
     private void handleScenarioRemoved(String hubId, ScenarioRemovedEventAvro event) {
         String name = event.getName();
         log.info("🗑️ Удаление сценария: hubId={}, name={}", hubId, name);

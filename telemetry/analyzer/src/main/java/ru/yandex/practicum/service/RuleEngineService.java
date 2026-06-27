@@ -3,6 +3,7 @@ package ru.yandex.practicum.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.kafka.telemetry.event.*;
 import ru.yandex.practicum.model.*;
 import ru.yandex.practicum.repository.ScenarioRepository;
@@ -18,6 +19,7 @@ public class RuleEngineService {
     private final ScenarioRepository scenarioRepository;
     private final HubRouterClientService hubRouterService;
 
+    @Transactional(readOnly = true)
     public void processSnapshot(SensorsSnapshotAvro snapshot) {
         String hubId = snapshot.getHubId();
         Map<String, SensorStateAvro> sensorsState = snapshot.getSensorsState();

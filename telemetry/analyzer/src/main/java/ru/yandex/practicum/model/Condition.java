@@ -18,14 +18,16 @@ public class Condition {
     private Long id;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private ConditionType type;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private ConditionOperation operation;
 
-    private Integer value;
+    private Double value;
 
-    public Condition(ConditionType type, ConditionOperation operation, Integer value) {
+    public Condition(ConditionType type, ConditionOperation operation, Double value) {
         this.type = type;
         this.operation = operation;
         this.value = value;
