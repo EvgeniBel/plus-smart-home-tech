@@ -14,7 +14,8 @@ spring:
     show-sql: false
 
   flyway:
-    enabled: false
+    enabled: true
+    baseline-on-migrate: true
 
 kafka:
   topics:
