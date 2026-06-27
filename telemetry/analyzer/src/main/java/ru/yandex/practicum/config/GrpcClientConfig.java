@@ -12,7 +12,7 @@ public class GrpcClientConfig {
     @Bean
     public HubRouterControllerGrpc.HubRouterControllerBlockingStub hubRouterStub() {
         ManagedChannel channel = ManagedChannelBuilder
-                .forAddress("localhost", 9090)
+                .forAddress("localhost", 59090)
                 .usePlaintext()
                 .build();
 
