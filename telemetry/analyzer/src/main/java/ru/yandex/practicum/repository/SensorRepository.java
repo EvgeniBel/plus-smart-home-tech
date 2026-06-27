@@ -1,6 +1,8 @@
 package ru.yandex.practicum.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.model.Sensor;
 
 import java.util.Collection;
@@ -11,5 +13,7 @@ public interface SensorRepository extends JpaRepository<Sensor, String> {
 
     Optional<Sensor> findByIdAndHubId(String id, String hubId);
 
+    @Modifying
+    @Transactional
     void deleteByHubId(String hubId);
 }

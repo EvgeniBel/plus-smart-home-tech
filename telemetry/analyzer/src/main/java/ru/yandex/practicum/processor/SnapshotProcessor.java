@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class SnapshotProcessor {
 
     private final KafkaConsumer<String, SensorsSnapshotAvro> snapshotConsumer;
-    private final RuleEngineService ruleEngineService;  // ✅ Используем RuleEngineService
+    private final RuleEngineService ruleEngineService;
     private final AtomicBoolean running = new AtomicBoolean(true);
 
     @Value("${kafka.topics.snapshots:telemetry.snapshots.v1}")
@@ -51,7 +51,6 @@ public class SnapshotProcessor {
                         SensorsSnapshotAvro snapshot = record.value();
                         log.debug("📊 Обработка снапшота: hubId={}, sensors={}",
                                 snapshot.getHubId(), snapshot.getSensorsState().size());
-                        // ✅ Делегируем обработку сервису
                         ruleEngineService.processSnapshot(snapshot);
                     } catch (Exception e) {
                         log.error("❌ Ошибка обработки снапшота: offset={}", record.offset(), e);

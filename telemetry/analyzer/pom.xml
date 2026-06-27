@@ -14,12 +14,6 @@
     <artifactId>analyzer</artifactId>
     <packaging>jar</packaging>
 
-    <properties>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
-
     <dependencies>
         <!-- Spring Boot -->
         <dependency>
@@ -72,6 +66,12 @@
             <artifactId>flyway-core</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
         <!-- gRPC Client -->
         <dependency>
             <groupId>net.devh</groupId>
@@ -103,11 +103,10 @@
 
     <build>
         <plugins>
-            <!-- spring-boot-maven-plugin -->
+            <!-- ✅ КАК В AGGREGATOR - spring-boot-maven-plugin -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>3.3.2</version>
                 <configuration>
                     <mainClass>ru.yandex.practicum.AnalyzerApplication</mainClass>
                 </configuration>

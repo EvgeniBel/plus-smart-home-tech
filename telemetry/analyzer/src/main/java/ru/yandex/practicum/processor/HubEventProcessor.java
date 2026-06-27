@@ -11,8 +11,7 @@ import org.springframework.stereotype.Component;
 import ru.yandex.practicum.kafka.telemetry.event.*;
 import ru.yandex.practicum.mapper.ActionMapper;
 import ru.yandex.practicum.mapper.ConditionMapper;
-import ru.yandex.practicum.model.Scenario;
-import ru.yandex.practicum.model.Sensor;
+import ru.yandex.practicum.model.*;
 import ru.yandex.practicum.repository.ScenarioRepository;
 import ru.yandex.practicum.repository.SensorRepository;
 
@@ -132,31 +131,41 @@ public class HubEventProcessor implements Runnable {
         String name = event.getName();
         log.info("📝 Добавление сценария: hubId={}, name={}", hubId, name);
 
-        // Удаляем существующий сценарий с таким же именем
         Optional<Scenario> existing = scenarioRepository.findByHubIdAndName(hubId, name);
         existing.ifPresent(scenarioRepository::delete);
 
-        // Создаём новый сценарий
         Scenario scenario = new Scenario();
         scenario.setHubId(hubId);
         scenario.setName(name);
 
-        // Маппим условия через ConditionMapper
         if (event.getConditions() != null && !event.getConditions().isEmpty()) {
             event.getConditions().forEach(c -> {
-                var condition = conditionMapper.fromAvro(c);
+                Condition condition = conditionMapper.fromAvro(c);
                 if (condition != null) {
-                    scenario.getConditions().put(c.getSensorId(), condition);
+                    Sensor sensor = sensorRepository.findByIdAndHubId(c.getSensorId(), hubId).orElse(null);
+                    if (sensor != null) {
+                        ScenarioCondition sc = new ScenarioCondition();
+                        sc.setScenario(scenario);
+                        sc.setSensor(sensor);
+                        sc.setCondition(condition);
+                        scenario.getConditions().add(sc);
+                    }
                 }
             });
         }
 
-        // Маппим действия через ActionMapper
         if (event.getActions() != null && !event.getActions().isEmpty()) {
             event.getActions().forEach(a -> {
-                var action = actionMapper.fromAvro(a);
+                Action action = actionMapper.fromAvro(a);
                 if (action != null) {
-                    scenario.getActions().put(a.getSensorId(), action);
+                    Sensor sensor = sensorRepository.findByIdAndHubId(a.getSensorId(), hubId).orElse(null);
+                    if (sensor != null) {
+                        ScenarioAction sa = new ScenarioAction();
+                        sa.setScenario(scenario);
+                        sa.setSensor(sensor);
+                        sa.setAction(action);
+                        scenario.getActions().add(sa);
+                    }
                 }
             });
         }

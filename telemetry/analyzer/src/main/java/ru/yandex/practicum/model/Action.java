@@ -1,20 +1,26 @@
 package ru.yandex.practicum.model;
 
-import jakarta.persistence.Embeddable;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
+import jakarta.persistence.*;
 import lombok.*;
-import lombok.experimental.FieldDefaults;
 
-@Embeddable
+@Entity
+@Table(name = "actions")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE)
 public class Action {
-    @Enumerated(EnumType.STRING)
-    ActionType type;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    Integer value;
+    @Enumerated(EnumType.STRING)
+    private ActionType type;
+
+    private Integer value;
+
+    public Action(ActionType type, Integer value) {
+        this.type = type;
+        this.value = value;
+    }
 }

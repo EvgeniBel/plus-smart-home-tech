@@ -4,8 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "scenarios", uniqueConstraints = {
@@ -28,13 +28,9 @@ public class Scenario {
     @Column(name = "name")
     String name;
 
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "scenario_conditions")
-    @MapKeyColumn(name = "sensor_id")
-    Map<String, Condition> conditions = new HashMap<>();
+    @OneToMany(mappedBy = "scenario", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    List<ScenarioCondition> conditions = new ArrayList<>();
 
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "scenario_actions")
-    @MapKeyColumn(name = "sensor_id")
-    Map<String, Action> actions = new HashMap<>();
+    @OneToMany(mappedBy = "scenario", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    List<ScenarioAction> actions = new ArrayList<>();
 }

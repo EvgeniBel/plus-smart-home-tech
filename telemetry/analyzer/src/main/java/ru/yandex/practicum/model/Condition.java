@@ -1,23 +1,30 @@
 package ru.yandex.practicum.model;
 
-import jakarta.persistence.Embeddable;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
+import jakarta.persistence.*;
 import lombok.*;
-import lombok.experimental.FieldDefaults;
 
-@Embeddable
+@Entity
+@Table(name = "conditions")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE)
 public class Condition {
-    @Enumerated(EnumType.STRING)
-    ConditionType type;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @Enumerated(EnumType.STRING)
-    ConditionOperation operation;
+    private ConditionType type;
 
-    Integer value;
+    @Enumerated(EnumType.STRING)
+    private ConditionOperation operation;
+
+    private Integer value;
+
+    public Condition(ConditionType type, ConditionOperation operation, Integer value) {
+        this.type = type;
+        this.operation = operation;
+        this.value = value;
+    }
 }

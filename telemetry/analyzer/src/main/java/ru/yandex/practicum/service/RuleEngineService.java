@@ -4,9 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.kafka.telemetry.event.*;
-import ru.yandex.practicum.model.Condition;
-import ru.yandex.practicum.model.ConditionType;
-import ru.yandex.practicum.model.Scenario;
+import ru.yandex.practicum.model.*;
 import ru.yandex.practicum.repository.ScenarioRepository;
 
 import java.util.Map;
@@ -21,7 +19,6 @@ public class RuleEngineService {
 
     public void processSnapshot(SensorsSnapshotAvro snapshot) {
         String hubId = snapshot.getHubId();
-        // ✅ Исправлено: SensorStateAvro вместо SensorEventAvro
         Map<String, SensorStateAvro> sensorsState = snapshot.getSensorsState();
 
         scenarioRepository.findByHubId(hubId).stream()
@@ -31,23 +28,56 @@ public class RuleEngineService {
     }
 
     private boolean checkAllConditions(Scenario scenario, Map<String, SensorStateAvro> sensorsState) {
-        return scenario.getConditions().entrySet().stream()
-                .allMatch(entry -> {
-                    String sensorId = entry.getKey();
-                    Condition condition = entry.getValue();
+        return scenario.getConditions().stream()
+                .allMatch(sc -> checkCondition(sc, sensorsState));
+    }
 
-                    SensorStateAvro sensorState = sensorsState.get(sensorId);
-                    if (sensorState == null || sensorState.getData() == null) {
-                        return false;
-                    }
+    private boolean checkCondition(ScenarioCondition sc, Map<String, SensorStateAvro> sensorsState) {
+        String sensorId = sc.getSensor().getId();
+        Condition condition = sc.getCondition();
 
-                    Object actualValue = extractSensorValue(sensorState.getData(), condition.getType());
-                    if (actualValue == null) {
-                        return false;
-                    }
+        SensorStateAvro sensorState = sensorsState.get(sensorId);
+        if (sensorState == null || sensorState.getData() == null) {
+            log.debug("❌ Датчик {} не найден в снапшоте", sensorId);
+            return false;
+        }
 
-                    return condition.getOperation().getPredicate().test((Double) actualValue, (double) condition.getValue());
-                });
+        // ✅ Проверка на null для типа датчика
+        if (condition.getType() == null) {
+            log.warn("⚠️ Тип условия равен null для датчика {}", sensorId);
+            return false;
+        }
+
+        // ✅ Проверка на null для операции
+        if (condition.getOperation() == null) {
+            log.warn("⚠️ Операция условия равна null для датчика {}", sensorId);
+            return false;
+        }
+
+        Object actualValue = extractSensorValue(sensorState.getData(), condition.getType());
+        if (actualValue == null) {
+            log.debug("❌ Не удалось извлечь значение для датчика {} типа {}",
+                    sensorId, condition.getType());
+            return false;
+        }
+
+        // ✅ Проверка на null для значения условия
+        if (condition.getValue() == null) {
+            log.warn("⚠️ Значение условия равно null для датчика {} типа {}",
+                    sensorId, condition.getType());
+            return false;
+        }
+
+        try {
+            return condition.getOperation().getPredicate().test(
+                    (Double) actualValue,
+                    condition.getValue().doubleValue()
+            );
+        } catch (ClassCastException e) {
+            log.error("❌ Ошибка приведения типов: actualValue={}, expectedType=Double",
+                    actualValue.getClass().getSimpleName(), e);
+            return false;
+        }
     }
 
     private Object extractSensorValue(Object payload, ConditionType type) {
@@ -66,19 +96,42 @@ public class RuleEngineService {
             case LUMINOSITY -> payload instanceof LightSensorAvro l ? (double) l.getLuminosity() : null;
             case MOTION -> payload instanceof MotionSensorAvro m ? (m.getMotion() ? 1.0 : 0.0) : null;
             case SWITCH -> payload instanceof SwitchSensorAvro s ? (s.getState() ? 1.0 : 0.0) : null;
+            default -> {
+                log.warn("⚠️ Неизвестный тип условия: {}", type);
+                yield null;
+            }
         };
     }
 
     private void executeScenario(String hubId, Scenario scenario, Map<String, SensorStateAvro> sensorsState) {
         log.info("⚡ Выполнение сценария: hubId={}, name={}", hubId, scenario.getName());
 
-        scenario.getActions().forEach((sensorId, action) -> {
-            if (sensorsState.containsKey(sensorId)) {
+        scenario.getActions().forEach(sa -> {
+            String sensorId = sa.getSensor().getId();
+            Action action = sa.getAction();
+
+            if (action == null) {
+                log.warn("⚠️ Действие равно null для датчика {}", sensorId);
+                return;
+            }
+
+            if (action.getType() == null) {
+                log.warn("⚠️ Тип действия равен null для датчика {}", sensorId);
+                return;
+            }
+
+            if (!sensorsState.containsKey(sensorId)) {
+                log.warn("⚠️ Датчик {} не найден в снапшоте", sensorId);
+                return;
+            }
+
+            try {
                 hubRouterService.sendAction(hubId, scenario.getName(), sensorId, action);
                 log.info("📤 Действие отправлено: sensorId={}, type={}, value={}",
                         sensorId, action.getType(), action.getValue());
-            } else {
-                log.warn("⚠️ Датчик {} не найден в снапшоте", sensorId);
+            } catch (Exception e) {
+                log.error("❌ Ошибка отправки действия: sensorId={}, type={}",
+                        sensorId, action.getType(), e);
             }
         });
     }
