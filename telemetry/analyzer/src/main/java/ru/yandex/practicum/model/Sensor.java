@@ -22,8 +22,8 @@ import static lombok.AccessLevel.PRIVATE;
 public class Sensor {
 
     @Id
-    private String id;
+    String id;
 
     @Column(name = "hub_id")
-    private String hubId;
+    String hubId;
 }
