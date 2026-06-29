@@ -8,10 +8,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.config.kafka.KafkaEventProducer;
 import ru.yandex.practicum.dto.sensor.SensorEventDto;
-import ru.yandex.practicum.mapper.SensorEventDtoMapper;
-import telemetry.service.collector.SensorEventProto;
 import ru.yandex.practicum.kafka.telemetry.event.SensorEventAvro;
+import ru.yandex.practicum.mapper.SensorEventDtoMapper;
 import ru.yandex.practicum.mapper.SensorEventMapper;
+import telemetry.service.collector.SensorEventProto;
 
 @Service
 @RequiredArgsConstructor
