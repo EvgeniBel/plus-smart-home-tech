@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package telemetry.messages;
 
-option java_package = "telemetry.service.hubrouter";
+option java_package = "ru.yandex.practicum.grpc.telemetry.event";
 option java_multiple_files = true;
 
 import "google/protobuf/timestamp.proto";

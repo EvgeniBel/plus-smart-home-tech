@@ -11,7 +11,7 @@ import ru.yandex.practicum.dto.hub.HubEventDto;
 import ru.yandex.practicum.kafka.telemetry.event.HubEventAvro;
 import ru.yandex.practicum.mapper.HubEventDtoMapper;
 import ru.yandex.practicum.mapper.HubEventMapper;
-import telemetry.service.collector.HubEventProto;
+import ru.yandex.practicum.grpc.telemetry.event.HubEventProto;
 
 @Service
 @RequiredArgsConstructor

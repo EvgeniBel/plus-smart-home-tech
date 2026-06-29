@@ -5,8 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.grpc.handler.HubEventHandler;
 import ru.yandex.practicum.service.HubEventService;
-import telemetry.service.collector.HubEventProto;
-import telemetry.service.collector.ScenarioRemovedEventProto;
+import ru.yandex.practicum.grpc.telemetry.event.HubEventProto;
+import ru.yandex.practicum.grpc.telemetry.event.ScenarioRemovedEventProto;
 
 @Component
 @RequiredArgsConstructor

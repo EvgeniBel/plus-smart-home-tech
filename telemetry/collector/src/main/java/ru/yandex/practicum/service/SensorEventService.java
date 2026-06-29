@@ -11,7 +11,7 @@ import ru.yandex.practicum.dto.sensor.SensorEventDto;
 import ru.yandex.practicum.kafka.telemetry.event.SensorEventAvro;
 import ru.yandex.practicum.mapper.SensorEventDtoMapper;
 import ru.yandex.practicum.mapper.SensorEventMapper;
-import telemetry.service.collector.SensorEventProto;
+import ru.yandex.practicum.grpc.telemetry.event.SensorEventProto;
 
 @Service
 @RequiredArgsConstructor

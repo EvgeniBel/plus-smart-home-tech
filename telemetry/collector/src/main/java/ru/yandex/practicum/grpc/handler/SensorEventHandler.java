@@ -1,6 +1,6 @@
 package ru.yandex.practicum.grpc.handler;
 
-import telemetry.service.collector.SensorEventProto;
+import ru.yandex.practicum.grpc.telemetry.event.SensorEventProto;
 
 public interface SensorEventHandler {
     SensorEventProto.PayloadCase getMessageType();

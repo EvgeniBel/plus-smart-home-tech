@@ -19,10 +19,10 @@ import ru.yandex.practicum.model.Condition;
 import ru.yandex.practicum.model.Scenario;
 import ru.yandex.practicum.repository.ScenarioRepository;
 import ru.yandex.practicum.repository.SensorRepository;
-import telemetry.service.collector.ActionTypeProto;
-import telemetry.service.collector.DeviceActionProto;
-import telemetry.service.hubrouter.DeviceActionRequest;
-import telemetry.service.hubrouter.HubRouterControllerGrpc;
+import ru.yandex.practicum.grpc.telemetry.event.ActionTypeProto;
+import ru.yandex.practicum.grpc.telemetry.event.DeviceActionProto;
+import ru.yandex.practicum.grpc.telemetry.event.DeviceActionRequest;
+import ru.yandex.practicum.grpc.telemetry.hubrouter.HubRouterControllerGrpc;
 
 import java.time.Duration;
 import java.time.Instant;
