@@ -1,8 +1,8 @@
 package ru.yandex.practicum.mapper;
 
 import org.springframework.stereotype.Component;
-import ru.yandex.practicum.model.Condition;  // ← исправлено
 import ru.yandex.practicum.kafka.telemetry.event.ScenarioConditionAvro;
+import ru.yandex.practicum.model.Condition;
 
 @Component
 public class ConditionMapper {

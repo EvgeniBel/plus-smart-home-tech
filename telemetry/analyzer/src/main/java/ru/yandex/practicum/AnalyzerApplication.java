@@ -8,11 +8,11 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 @Slf4j
 @SpringBootApplication
 @ConfigurationPropertiesScan
-public class Analyzer {
+public class AnalyzerApplication {
 
     public static void main(String[] args) {
         log.info("Запуск Analyzer приложения");
-        SpringApplication.run(Analyzer.class, args);
+        SpringApplication.run(AnalyzerApplication.class, args);
         log.info("Analyzer приложение успешно запущено");
     }
 }

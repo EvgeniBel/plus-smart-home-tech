@@ -2,7 +2,7 @@ package ru.yandex.practicum.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-import ru.yandex.practicum.model.Sensor;  // ← добавлен импорт
+import ru.yandex.practicum.model.Sensor;
 
 import java.util.Collection;
 import java.util.Optional;

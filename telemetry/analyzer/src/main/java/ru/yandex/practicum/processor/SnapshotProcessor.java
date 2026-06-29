@@ -19,11 +19,10 @@ import ru.yandex.practicum.model.Condition;
 import ru.yandex.practicum.model.Scenario;
 import ru.yandex.practicum.repository.ScenarioRepository;
 import ru.yandex.practicum.repository.SensorRepository;
-
-import telemetry.service.collector.ActionTypeProto;        // Из hub_event.proto
-import telemetry.service.collector.DeviceActionProto;      // Из hub_event.proto
-import telemetry.service.hubrouter.DeviceActionRequest;    // Из device_action.proto
-import telemetry.service.hubrouter.HubRouterControllerGrpc; // Из hub_router_controller.proto
+import telemetry.service.collector.ActionTypeProto;
+import telemetry.service.collector.DeviceActionProto;
+import telemetry.service.hubrouter.DeviceActionRequest;
+import telemetry.service.hubrouter.HubRouterControllerGrpc;
 
 import java.time.Duration;
 import java.time.Instant;
