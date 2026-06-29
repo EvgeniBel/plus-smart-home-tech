@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package telemetry.messages;
+
+option java_package = "telemetry.service.hubrouter";
+option java_multiple_files = true;
+
+import "google/protobuf/timestamp.proto";
+import "telemetry/messages/hub_event.proto";
+
+message DeviceActionRequest {
+    string hub_id = 1;
+    string scenario_name = 2;
+    telemetry.service.collector.DeviceActionProto action = 3;  // Из hub_event.proto
+    google.protobuf.Timestamp timestamp = 4;
+}
