@@ -1,0 +1,60 @@
+spring:
+  application:
+    name: analyzer
+
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/telemetry_analyzer
+    username: postgres
+    password: password
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+  sql:
+    init:
+      mode: never
+
+  kafka:
+    bootstrap-servers: localhost:9092
+
+custom:
+  kafka:
+    bootstrap-servers: localhost:9092
+
+  kafka-hub-event:
+    hub-event-consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: ru.yandex.practicum.broker.HubEventDeserializer
+      auto-offset-reset: earliest
+      group-id: analyzer-hub-events
+
+  kafka-snapshot:
+    snapshot-consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: ru.yandex.practicum.broker.SensorsSnapshotDeserializer
+      auto-offset-reset: earliest
+      group-id: analyzer-snapshots
+
+grpc:
+  client:
+    hub-router:
+      address: static://localhost:59090
+      negotiation-type: plaintext
+
+logging:
+  level:
+    ru.yandex.practicum: DEBUG
+    org.springframework.kafka: DEBUG
+    org.apache.kafka: WARN
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
