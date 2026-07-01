@@ -1,5 +1,5 @@
 server:
-  port: 8081
+  port: 0
 
 spring:
   application:
@@ -33,3 +33,8 @@ logging:
     org.apache.kafka: DEBUG
     org.apache.kafka.clients.consumer: DEBUG
     org.apache.kafka.clients.producer: DEBUG
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
