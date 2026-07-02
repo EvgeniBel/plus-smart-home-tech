@@ -1,26 +1,25 @@
 package ru.yandex.practicum.dto;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.experimental.FieldDefaults;
 import ru.yandex.practicum.enums.ProductCategory;
 import ru.yandex.practicum.enums.ProductState;
 import ru.yandex.practicum.enums.QuantityState;
 
+import java.util.UUID;
+
 @Data
-@AllArgsConstructor
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ProductDto {
-    Long id;
-    String name;
+    UUID productId;
+    String productName;
     String description;
-    String imageUrl;
-    Double price;
-    ProductCategory category;
+    String imageSrc;
     QuantityState quantityState;
-    ProductState state;
+    ProductState productState;
+    ProductCategory productCategory;
+    Double price;
 }
-

@@ -6,13 +6,15 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
+import java.util.List;
 import java.util.UUID;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class CartItemDto {
-    UUID productId;
-    Integer quantity;
+public class AvailabilityResponse {
+    boolean available;
+    List<UUID> unavailableProducts;
+    String message;
 }

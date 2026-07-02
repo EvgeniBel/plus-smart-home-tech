@@ -12,7 +12,14 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class CartItemDto {
+public class AddProductRequest {
     UUID productId;
+    String name;
+    String description;
+    Double weight;
+    Double width;
+    Double height;
+    Double depth;
+    boolean fragile;
     Integer quantity;
 }
