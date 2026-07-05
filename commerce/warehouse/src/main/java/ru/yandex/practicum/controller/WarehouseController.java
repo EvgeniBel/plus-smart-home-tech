@@ -7,10 +7,10 @@ import ru.yandex.practicum.client.WarehouseClient;
 import ru.yandex.practicum.dto.*;
 import ru.yandex.practicum.service.WarehouseService;
 
-@RestController
-@RequestMapping("/api/v1/warehouse")
 @Slf4j
+@RestController
 @RequiredArgsConstructor
+@RequestMapping("/api/v1/warehouse")
 public class WarehouseController implements WarehouseClient {
 
     private final WarehouseService warehouseService;

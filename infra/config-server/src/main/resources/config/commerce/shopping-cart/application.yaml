@@ -1,8 +1,11 @@
+server:
+  port: 0
+
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/shopping_cart
     username: postgres
-    password: postgres
+    password: password
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -15,9 +18,6 @@ spring:
         use_sql_comments: true
     open-in-view: false
 
-server:
-  port: 0  # ← Автоматический выбор порта
-
 eureka:
   instance:
     prefer-ip-address: true
@@ -25,12 +25,49 @@ eureka:
     lease-renewal-interval-in-seconds: 30
     lease-expiration-duration-in-seconds: 90
 
+# Resilience4j Circuit Breaker настройки
+resilience4j:
+  circuitbreaker:
+    instances:
+      warehouseService:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+        wait-duration-in-open-state: 5s
+        failure-rate-threshold: 50
+        sliding-window-type: COUNT_BASED
+    configs:
+      default:
+        register-health-indicator: true
+        sliding-window-size: 100
+        minimum-number-of-calls: 10
+        permitted-number-of-calls-in-half-open-state: 10
+        automatic-transition-from-open-to-half-open-enabled: false
+        wait-duration-in-open-state: 10000
+        failure-rate-threshold: 60
+        event-consumer-buffer-size: 10
+  retry:
+    instances:
+      warehouseService:
+        max-attempts: 3
+        wait-duration: 1s
+        retry-exceptions:
+          - org.springframework.web.client.HttpServerErrorException
+          - java.io.IOException
+  bulkhead:
+    instances:
+      warehouseService:
+        max-concurrent-calls: 10
+        max-wait-duration: 10ms
+
 logging:
   level:
     ru.yandex.practicum: DEBUG
     org.springframework.web: INFO
     org.hibernate: INFO
     org.hibernate.SQL: DEBUG
+    io.github.resilience4j: DEBUG
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
@@ -38,3 +75,23 @@ logging:
     name: logs/shopping-cart.log
     max-size: 10MB
     max-history: 7
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,circuitbreakers
+  endpoint:
+    health:
+      show-details: always
+    circuitbreakers:
+      enabled: true
+  info:
+    env:
+      enabled: true
+
+info:
+  app:
+    name: ${spring.application.name}
+    version: 1.0.0
+    description: Shopping Cart Service

@@ -15,7 +15,6 @@ import ru.yandex.practicum.repository.WarehouseProductRepository;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -23,21 +22,20 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class WarehouseService {
 
-    // Адреса склада
-    private static final String[] ADDRESSES = {"ADDRESS_1", "ADDRESS_2"};
-    private static final String CURRENT_ADDRESS = ADDRESSES[new SecureRandom().nextInt(ADDRESSES.length)];
     private final WarehouseProductRepository warehouseProductRepository;
     private final WarehouseMapper warehouseMapper;
 
+    // Адреса склада
+    private static final String[] ADDRESSES = {"ADDRESS_1", "ADDRESS_2"};
+    private static final String CURRENT_ADDRESS = ADDRESSES[new SecureRandom().nextInt(ADDRESSES.length)];
+
     /**
      * Добавить новый товар на склад
-     * PUT /api/v1/warehouse
      */
     @Transactional
     public void newProductInWarehouse(NewProductInWarehouseRequest request) {
         log.info("Добавление нового товара на склад: {}", request.getProductId());
 
-        // Проверяем, существует ли уже товар на складе
         if (warehouseProductRepository.existsById(request.getProductId())) {
             log.warn("Товар уже существует на складе: {}", request.getProductId());
             throw new SpecifiedProductAlreadyInWarehouseException(
@@ -45,18 +43,15 @@ public class WarehouseService {
             );
         }
 
-        // Создаем новый товар на складе
         WarehouseProduct product = warehouseMapper.toEntity(request);
         warehouseMapper.updateDimensions(product, request.getDimension());
 
-        // Сохраняем
         warehouseProductRepository.save(product);
         log.info("Товар успешно добавлен на склад: {}", request.getProductId());
     }
 
     /**
      * Проверить доступность товаров на складе для корзины
-     * POST /api/v1/warehouse/check
      */
     @Transactional(readOnly = true)
     public BookedProductsDto checkProductQuantityEnoughForShoppingCart(ShoppingCartDto cart) {
@@ -75,10 +70,10 @@ public class WarehouseService {
 
         log.info("Проверка {} товаров в корзине", cart.getProducts().size());
 
-        // Проверяем каждый товар в корзине
-        for (Map.Entry<UUID, Integer> entry : cart.getProducts().entrySet()) {
-            UUID productId = entry.getKey();
-            Integer requestedQuantity = entry.getValue();
+        // ✅ ИСПРАВЛЕНО: итерируем по List<CartItemDto>
+        for (CartItemDto item : cart.getProducts()) {
+            UUID productId = item.getProductId();
+            Integer requestedQuantity = item.getQuantity();
 
             log.debug("Проверка товара: {}, запрошено: {}", productId, requestedQuantity);
 
@@ -92,7 +87,6 @@ public class WarehouseService {
 
             log.debug("На складе: {}, запрошено: {}", product.getQuantity(), requestedQuantity);
 
-            // Проверяем наличие достаточного количества
             if (product.getQuantity() < requestedQuantity) {
                 unavailableProducts.add(productId);
                 log.warn("Недостаточное количество товара {}. На складе: {}, Запрошено: {}",
@@ -100,25 +94,16 @@ public class WarehouseService {
                 continue;
             }
 
-            // Считаем общий вес
-            double weight = product.getWeight() * requestedQuantity;
-            totalWeight += weight;
-            log.debug("Вес товара {}: {} кг", productId, weight);
-
-            // Считаем общий объем (ширина * высота * глубина)
+            totalWeight += product.getWeight() * requestedQuantity;
             double volume = product.getWidth() * product.getHeight() * product.getDepth();
-            double totalVolumeForProduct = volume * requestedQuantity;
-            totalVolume += totalVolumeForProduct;
-            log.debug("Объем товара {}: {} м³", productId, totalVolumeForProduct);
+            totalVolume += volume * requestedQuantity;
 
-            // Проверяем на хрупкость
             if (product.isFragile()) {
                 hasFragile = true;
                 log.debug("Товар {} является хрупким", productId);
             }
         }
 
-        // Если есть недоступные товары - выбрасываем исключение
         if (!unavailableProducts.isEmpty()) {
             log.warn("Обнаружены товары с недостаточным количеством: {}", unavailableProducts);
             throw new ProductInShoppingCartLowQuantityInWarehouse(
@@ -130,7 +115,6 @@ public class WarehouseService {
         log.info("Проверка завершена успешно. Общий вес: {} кг, Общий объем: {} м³, Хрупкие: {}",
                 totalWeight, totalVolume, hasFragile);
 
-        // Возвращаем результат бронирования
         return BookedProductsDto.builder()
                 .deliveryWeight(totalWeight)
                 .deliveryVolume(totalVolume)
@@ -140,7 +124,6 @@ public class WarehouseService {
 
     /**
      * Принять товар на склад (увеличить количество)
-     * POST /api/v1/warehouse/add
      */
     @Transactional
     public void addProductToWarehouse(AddProductToWarehouseRequest request) {
@@ -155,7 +138,6 @@ public class WarehouseService {
                     );
                 });
 
-        // Увеличиваем количество
         int oldQuantity = product.getQuantity();
         int newQuantity = oldQuantity + request.getQuantity().intValue();
         product.setQuantity(newQuantity);
@@ -167,12 +149,10 @@ public class WarehouseService {
 
     /**
      * Получить адрес склада
-     * GET /api/v1/warehouse/address
      */
     public AddressDto getWarehouseAddress() {
         log.info("Запрос адреса склада. Текущий адрес: {}", CURRENT_ADDRESS);
 
-        // Преобразуем строку адреса в объект AddressDto
         return AddressDto.builder()
                 .country(CURRENT_ADDRESS)
                 .city(CURRENT_ADDRESS)
