@@ -5,11 +5,14 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+
+import static lombok.AccessLevel.PRIVATE;
 
 @Entity
 @Table(name = "carts")
@@ -17,24 +20,25 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@FieldDefaults(level = PRIVATE)
 public class ShoppingCart {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    UUID id;
 
     @Column(unique = true, nullable = false)
-    private String username;
+    String username;
 
     @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL,
             orphanRemoval = true, fetch = FetchType.LAZY)
-    @Builder.Default  // ← ДОБАВИТЬ ЭТУ АННОТАЦИЮ
-    private List<CartItem> items = new ArrayList<>();
+    @Builder.Default
+    List<CartItem> items = new ArrayList<>();
 
-    @Builder.Default  // ← ДОБАВИТЬ ЭТУ АННОТАЦИЮ
-    private boolean active = true;
+    @Builder.Default
+    boolean active = true;
 
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    LocalDateTime createdAt;
+    LocalDateTime updatedAt;
 
     @PrePersist
     protected void onCreate() {

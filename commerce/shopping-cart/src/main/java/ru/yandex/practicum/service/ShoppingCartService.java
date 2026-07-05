@@ -33,47 +33,65 @@ public class ShoppingCartService {
     private final ShoppingCartMapper shoppingCartMapper;
     private final WarehouseClient warehouseClient;
 
+    /**
+     * Получить корзину пользователя
+     * GET /api/v1/shopping-cart
+     */
     @Transactional(readOnly = true)
     public ShoppingCartDto getShoppingCart(String username) {
+        log.info("Запрос корзины для пользователя: {}", username);
         validateUsername(username);
         ShoppingCart cart = getOrCreateActiveCart(username);
-        log.info("Retrieved shopping cart for user: {}", username);
+        log.info("Корзина успешно получена для пользователя: {}", username);
         return shoppingCartMapper.toDto(cart);
     }
 
+    /**
+     * Добавить товары в корзину
+     * POST /api/v1/shopping-cart
+     */
     @Transactional
     public ShoppingCartDto addProductToShoppingCart(String username, Map<UUID, Integer> products) {
+        log.info("Добавление товаров в корзину для пользователя: {}, количество позиций: {}",
+                username, products != null ? products.size() : 0);
         validateUsername(username);
         validateProducts(products);
 
         // Получаем текущую корзину
         ShoppingCart cart = getOrCreateActiveCart(username);
+        log.debug("Текущая корзина: {}, количество товаров: {}",
+                cart.getId(), cart.getItems() != null ? cart.getItems().size() : 0);
 
         // Добавляем товары в корзину
         for (Map.Entry<UUID, Integer> entry : products.entrySet()) {
             UUID productId = entry.getKey();
             Integer quantity = entry.getValue();
 
+            log.debug("Обработка товара: {}, количество: {}", productId, quantity);
+
             CartItem existingItem = findCartItem(cart, productId);
 
             if (existingItem != null) {
-                existingItem.setQuantity(existingItem.getQuantity() + quantity);
-                log.info("Updated quantity for product {} in cart: new quantity {}",
-                        productId, existingItem.getQuantity());
+                int oldQuantity = existingItem.getQuantity();
+                int newQuantity = oldQuantity + quantity;
+                existingItem.setQuantity(newQuantity);
+                log.info("Обновлено количество товара {} в корзине: {} → {}",
+                        productId, oldQuantity, newQuantity);
             } else {
                 CartItem newItem = createCartItem(cart, productId, quantity);
                 cart.getItems().add(newItem);
-                log.info("Added new product {} to cart with quantity {}", productId, quantity);
+                log.info("Добавлен новый товар {} в корзину с количеством {}", productId, quantity);
             }
         }
 
         // Сохраняем корзину
         ShoppingCart savedCart = shoppingCartRepository.save(cart);
+        log.debug("Корзина сохранена, ID: {}", savedCart.getId());
 
         // Проверяем наличие товаров на складе через отдельный метод с Circuit Breaker
         checkWarehouseAvailability(username, savedCart);
 
-        log.info("Products added to cart for user: {}", username);
+        log.info("Товары успешно добавлены в корзину для пользователя: {}", username);
         return shoppingCartMapper.toDto(savedCart);
     }
 
@@ -82,127 +100,171 @@ public class ShoppingCartService {
      */
     @CircuitBreaker(name = "warehouseService", fallbackMethod = "warehouseFallback")
     protected void checkWarehouseAvailability(String username, ShoppingCart cart) {
+        log.info("Проверка наличия товаров на складе для пользователя: {}", username);
+
         ShoppingCartDto cartDto = shoppingCartMapper.toDto(cart);
         BookedProductsDto bookedProducts = warehouseClient.checkProductQuantityEnoughForShoppingCart(cartDto);
-        log.info("Warehouse check passed for user: {}. Delivery weight: {}, volume: {}, fragile: {}",
-                username, bookedProducts.getDeliveryWeight(),
-                bookedProducts.getDeliveryVolume(), bookedProducts.getFragile());
+
+        log.info("Проверка склада пройдена для пользователя: {}. Вес доставки: {} кг, Объем: {} м³, Хрупкие: {}",
+                username,
+                bookedProducts.getDeliveryWeight(),
+                bookedProducts.getDeliveryVolume(),
+                bookedProducts.getFragile());
     }
 
     /**
      * Fallback метод для Circuit Breaker
      */
     protected void warehouseFallback(String username, ShoppingCart cart, Throwable throwable) {
-        log.warn("Circuit breaker fallback for warehouse check. User: {}, Error: {}",
+        log.warn("Circuit Breaker сработал при проверке склада. Пользователь: {}, Ошибка: {}",
                 username, throwable.getMessage());
 
-        // Если ошибка не связана с недостатком товаров, просто логируем
+        // Если ошибка связана с недостатком товаров - пробрасываем дальше
         if (throwable instanceof ProductInShoppingCartLowQuantityInWarehouse) {
+            log.error("На складе недостаточно товаров для пользователя: {}", username);
             throw (ProductInShoppingCartLowQuantityInWarehouse) throwable;
         }
 
         // В остальных случаях - логируем и продолжаем (warehouse недоступен)
-        log.warn("Warehouse service is unavailable. Products added without availability check.");
+        log.warn("Сервис склада временно недоступен. Товары добавлены без проверки наличия.");
     }
 
+    /**
+     * Удалить товары из корзины
+     * DELETE /api/v1/shopping-cart
+     */
     @Transactional
     public ShoppingCartDto removeFromShoppingCart(String username, List<UUID> productIds) {
+        log.info("Удаление товаров из корзины для пользователя: {}, количество: {}",
+                username, productIds != null ? productIds.size() : 0);
         validateUsername(username);
 
         if (productIds == null || productIds.isEmpty()) {
-            throw new IllegalArgumentException("Product IDs list cannot be empty");
+            log.warn("Список ID товаров для удаления пуст");
+            throw new IllegalArgumentException("Список ID товаров не может быть пустым");
         }
 
         ShoppingCart cart = getActiveCart(username);
+        log.debug("Найдена активная корзина, ID: {}, количество товаров: {}",
+                cart.getId(), cart.getItems() != null ? cart.getItems().size() : 0);
 
         boolean hasAnyProduct = cart.getItems().stream()
                 .anyMatch(item -> productIds.contains(item.getProductId()));
 
         if (!hasAnyProduct) {
+            log.warn("Указанные товары не найдены в корзине пользователя: {}", username);
             throw new NoProductsInShoppingCartException(
-                    "None of the specified products found in the cart"
+                    "Указанные товары не найдены в корзине"
             );
         }
 
         cartItemRepository.deleteByCartAndProductIdIn(cart, productIds);
+        log.debug("Товары удалены из БД: {}", productIds);
 
         ShoppingCart updatedCart = shoppingCartRepository.save(cart);
-        log.info("Products removed from cart for user: {}", username);
+        log.info("Товары успешно удалены из корзины для пользователя: {}", username);
 
         return shoppingCartMapper.toDto(updatedCart);
     }
 
+    /**
+     * Изменить количество товара в корзине
+     * PUT /api/v1/shopping-cart
+     */
     @Transactional
     public ShoppingCartDto changeProductQuantity(String username, ChangeProductQuantityRequest request) {
+        log.info("Изменение количества товара для пользователя: {}, товар: {}, новое количество: {}",
+                username, request.getProductId(), request.getNewQuantity());
         validateUsername(username);
 
         if (request.getProductId() == null) {
-            throw new IllegalArgumentException("Product ID cannot be null");
+            log.warn("ID товара не может быть null");
+            throw new IllegalArgumentException("ID товара не может быть null");
         }
 
         if (request.getNewQuantity() == null || request.getNewQuantity() < 0) {
-            throw new IllegalArgumentException("Quantity must be non-negative");
+            log.warn("Количество должно быть неотрицательным: {}", request.getNewQuantity());
+            throw new IllegalArgumentException("Количество должно быть неотрицательным");
         }
 
         ShoppingCart cart = getActiveCart(username);
+        log.debug("Найдена активная корзина, ID: {}", cart.getId());
 
         CartItem cartItem = findCartItem(cart, request.getProductId());
         if (cartItem == null) {
+            log.warn("Товар {} не найден в корзине пользователя {}", request.getProductId(), username);
             throw new NoProductsInShoppingCartException(
-                    "Product not found in cart: " + request.getProductId()
+                    "Товар не найден в корзине: " + request.getProductId()
             );
         }
 
         if (request.getNewQuantity() == 0) {
             cart.getItems().remove(cartItem);
             cartItemRepository.delete(cartItem);
-            log.info("Product {} removed from cart (quantity set to 0)", request.getProductId());
+            log.info("Товар {} удален из корзины (количество установлено в 0)", request.getProductId());
         } else {
+            int oldQuantity = cartItem.getQuantity();
             cartItem.setQuantity(request.getNewQuantity());
-            log.info("Product {} quantity updated to {}",
-                    request.getProductId(), request.getNewQuantity());
+            log.info("Количество товара {} изменено: {} → {}",
+                    request.getProductId(), oldQuantity, request.getNewQuantity());
         }
 
         ShoppingCart updatedCart = shoppingCartRepository.save(cart);
-        log.info("Product quantity changed for user: {}", username);
+        log.info("Количество товара успешно изменено для пользователя: {}", username);
 
         return shoppingCartMapper.toDto(updatedCart);
     }
 
+    /**
+     * Деактивировать корзину
+     * DELETE /api/v1/shopping-cart/deactivate
+     */
     @Transactional
     public void deactivateCurrentShoppingCart(String username) {
+        log.info("Деактивация корзины для пользователя: {}", username);
         validateUsername(username);
 
         ShoppingCart cart = getActiveCart(username);
         cart.setActive(false);
         shoppingCartRepository.save(cart);
 
-        log.info("Shopping cart deactivated for user: {}", username);
+        log.info("Корзина успешно деактивирована для пользователя: {}", username);
     }
 
     // ============ ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ============
 
     private ShoppingCart getOrCreateActiveCart(String username) {
+        log.debug("Поиск активной корзины для пользователя: {}", username);
         return shoppingCartRepository
                 .findByUsernameAndActiveTrue(username)
-                .orElseGet(() -> createNewCart(username));
+                .orElseGet(() -> {
+                    log.debug("Активная корзина не найдена, создаем новую для пользователя: {}", username);
+                    return createNewCart(username);
+                });
     }
 
     private ShoppingCart getActiveCart(String username) {
+        log.debug("Поиск активной корзины для пользователя: {}", username);
         return shoppingCartRepository
                 .findByUsernameAndActiveTrue(username)
-                .orElseThrow(() -> new NotAuthorizedUserException(
-                        "No active cart found for user: " + username
-                ));
+                .orElseThrow(() -> {
+                    log.warn("Активная корзина не найдена для пользователя: {}", username);
+                    return new NotAuthorizedUserException(
+                            "Активная корзина не найдена для пользователя: " + username
+                    );
+                });
     }
 
     private ShoppingCart createNewCart(String username) {
+        log.info("Создание новой корзины для пользователя: {}", username);
         ShoppingCart newCart = ShoppingCart.builder()
                 .username(username)
                 .active(true)
                 .items(new ArrayList<>())
                 .build();
-        return shoppingCartRepository.save(newCart);
+        ShoppingCart saved = shoppingCartRepository.save(newCart);
+        log.debug("Новая корзина создана, ID: {}", saved.getId());
+        return saved;
     }
 
     private CartItem findCartItem(ShoppingCart cart, UUID productId) {
@@ -230,22 +292,26 @@ public class ShoppingCartService {
 
     private void validateUsername(String username) {
         if (username == null || username.trim().isEmpty()) {
-            throw new NotAuthorizedUserException("Username cannot be empty");
+            log.warn("Имя пользователя не может быть пустым");
+            throw new NotAuthorizedUserException("Имя пользователя не может быть пустым");
         }
     }
 
     private void validateProducts(Map<UUID, Integer> products) {
         if (products == null || products.isEmpty()) {
-            throw new IllegalArgumentException("Products map cannot be empty");
+            log.warn("Список товаров не может быть пустым");
+            throw new IllegalArgumentException("Список товаров не может быть пустым");
         }
 
         for (Map.Entry<UUID, Integer> entry : products.entrySet()) {
             if (entry.getKey() == null) {
-                throw new IllegalArgumentException("Product ID cannot be null");
+                log.warn("ID товара не может быть null");
+                throw new IllegalArgumentException("ID товара не может быть null");
             }
             if (entry.getValue() == null || entry.getValue() <= 0) {
+                log.warn("Количество должно быть положительным для товара: {}", entry.getKey());
                 throw new IllegalArgumentException(
-                        "Quantity must be positive for product: " + entry.getKey()
+                        "Количество должно быть положительным для товара: " + entry.getKey()
                 );
             }
         }

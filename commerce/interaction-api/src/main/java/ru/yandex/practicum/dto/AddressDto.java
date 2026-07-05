@@ -11,14 +11,17 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import static lombok.AccessLevel.PRIVATE;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@FieldDefaults(level = PRIVATE)
 public class AddressDto {
-    private String country;
-    private String city;
-    private String street;
-    private String house;
-    private String flat;
+    String country;
+    String city;
+    String street;
+    String house;
+    String flat;
 }

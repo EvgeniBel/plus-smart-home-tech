@@ -8,7 +8,7 @@ import java.util.Random;
 @Component
 public class WarehouseAddress {
     private static final String[] ADDRESSES =
-            new String[] {"ADDRESS_1", "ADDRESS_2"};
+            new String[]{"ADDRESS_1", "ADDRESS_2"};
 
     private static final String CURRENT_ADDRESS =
             ADDRESSES[new Random().nextInt(ADDRESSES.length)];

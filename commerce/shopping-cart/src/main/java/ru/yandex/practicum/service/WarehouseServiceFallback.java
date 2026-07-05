@@ -11,14 +11,17 @@ public class WarehouseServiceFallback implements WarehouseClient {
 
     @Override
     public void newProductInWarehouse(NewProductInWarehouseRequest request) {
-        log.warn("Fallback: newProductInWarehouse called but warehouse is unavailable");
-        throw new RuntimeException("Warehouse service is unavailable");
+        log.warn("FALLBACK: Метод newProductInWarehouse вызван, но сервис склада недоступен. Товар: {}",
+                request != null ? request.getProductId() : "null");
+        throw new RuntimeException("Сервис склада временно недоступен");
     }
 
     @Override
     public BookedProductsDto checkProductQuantityEnoughForShoppingCart(ShoppingCartDto cart) {
-        log.warn("Fallback: checkProductQuantityEnoughForShoppingCart called but warehouse is unavailable");
+        log.warn("FALLBACK: Проверка наличия товаров на складе недоступна. Корзина: {}",
+                cart != null ? cart.getShoppingCartId() : "null");
         // Возвращаем "безопасный" ответ - считаем, что товаров достаточно
+        log.info("Возвращаем безопасный ответ: товары считаются доступными");
         return BookedProductsDto.builder()
                 .deliveryWeight(0.0)
                 .deliveryVolume(0.0)
@@ -28,19 +31,20 @@ public class WarehouseServiceFallback implements WarehouseClient {
 
     @Override
     public void addProductToWarehouse(AddProductToWarehouseRequest request) {
-        log.warn("Fallback: addProductToWarehouse called but warehouse is unavailable");
-        throw new RuntimeException("Warehouse service is unavailable");
+        log.warn("FALLBACK: Метод addProductToWarehouse вызван, но сервис склада недоступен. Товар: {}",
+                request != null ? request.getProductId() : "null");
+        throw new RuntimeException("Сервис склада временно недоступен");
     }
 
     @Override
     public AddressDto getWarehouseAddress() {
-        log.warn("Fallback: getWarehouseAddress called but warehouse is unavailable");
+        log.warn("FALLBACK: Запрос адреса склада недоступен. Возвращаем адрес по умолчанию");
         return AddressDto.builder()
-                .country("Unknown")
-                .city("Unknown")
-                .street("Unknown")
-                .house("Unknown")
-                .flat("Unknown")
+                .country("Неизвестно")
+                .city("Неизвестно")
+                .street("Неизвестно")
+                .house("Неизвестно")
+                .flat("Неизвестно")
                 .build();
     }
 }

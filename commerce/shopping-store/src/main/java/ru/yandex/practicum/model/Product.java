@@ -5,12 +5,14 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import ru.yandex.practicum.enums.ProductCategory;
 import ru.yandex.practicum.enums.ProductState;
 import ru.yandex.practicum.enums.QuantityState;
 
-
 import java.util.UUID;
+
+import static lombok.AccessLevel.PRIVATE;
 
 @Entity
 @Table(name = "products")
@@ -18,34 +20,35 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@FieldDefaults(level = PRIVATE)
 public class Product {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID productId;
+    UUID productId;
 
     @Column(nullable = false)
-    private String productName;
+    String productName;
 
     @Column(nullable = false, length = 1000)
-    private String description;
+    String description;
 
-    private String imageSrc;
+    String imageSrc;
 
     @Column(nullable = false)
-    private Double price;
+    Double price;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private ProductCategory productCategory;
+    ProductCategory productCategory;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private QuantityState quantityState;
+    QuantityState quantityState;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private ProductState productState;
+    ProductState productState;
 
     @PrePersist
     public void prePersist() {

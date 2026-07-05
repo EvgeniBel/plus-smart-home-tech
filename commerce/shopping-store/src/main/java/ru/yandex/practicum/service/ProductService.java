@@ -31,8 +31,12 @@ public class ProductService {
      * Получение страницы товаров по категории
      */
     public Page<ProductDto> getProducts(String category, Pageable pageable) {
+        log.info("Запрос списка товаров по категории: {}, страница: {}, размер: {}",
+                category, pageable.getPageNumber(), pageable.getPageSize());
+
         try {
             ProductCategory productCategory = ProductCategory.valueOf(category);
+            log.debug("Категория валидна: {}", productCategory);
 
             Page<Product> products = productRepository
                     .findByProductCategoryAndProductState(
@@ -41,12 +45,16 @@ public class ProductService {
                             pageable
                     );
 
+            log.info("Найдено {} активных товаров в категории {}",
+                    products.getTotalElements(), category);
             return products.map(productMapper::toDto);
 
         } catch (IllegalArgumentException e) {
-            log.warn("Invalid category: {}, returning all active products", category);
+            log.warn("Неверная категория: {}, возвращаем все активные товары", category);
             Page<Product> products = productRepository
                     .findByProductState(ProductState.ACTIVE, pageable);
+            log.info("Найдено {} активных товаров (без фильтра по категории)",
+                    products.getTotalElements());
             return products.map(productMapper::toDto);
         }
     }
@@ -56,17 +64,25 @@ public class ProductService {
      * Получение товара по ID
      */
     public ProductDto getProduct(UUID productId) {
+        log.info("Запрос товара по ID: {}", productId);
+
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new ProductNotFoundException(
-                        "Product not found with id: " + productId
-                ));
+                .orElseThrow(() -> {
+                    log.error("Товар не найден по ID: {}", productId);
+                    return new ProductNotFoundException(
+                            "Товар не найден с ID: " + productId
+                    );
+                });
 
         if (product.getProductState() == ProductState.DEACTIVATE) {
+            log.warn("Товар {} деактивирован", productId);
             throw new ProductNotFoundException(
-                    "Product is deactivated: " + productId
+                    "Товар деактивирован: " + productId
             );
         }
 
+        log.info("Товар успешно найден: {} (ID: {})",
+                product.getProductName(), productId);
         return productMapper.toDto(product);
     }
 
@@ -76,17 +92,23 @@ public class ProductService {
      */
     @Transactional
     public ProductDto createNewProduct(ProductDto productDto) {
-        log.info("Creating new product: {}", productDto.getProductName());
+        log.info("Создание нового товара: {}", productDto.getProductName());
+        log.debug("Данные товара: наименование='{}', цена={}, категория={}",
+                productDto.getProductName(),
+                productDto.getPrice(),
+                productDto.getProductCategory());
 
         Product product = productMapper.toEntity(productDto);
         product.setProductState(ProductState.ACTIVE);
 
         if (product.getQuantityState() == null) {
+            log.debug("Статус количества не указан, устанавливаем ENDED");
             product.setQuantityState(QuantityState.ENDED);
         }
 
         Product saved = productRepository.save(product);
-        log.info("Product created with id: {}", saved.getProductId());
+        log.info("Товар успешно создан с ID: {}, наименование: {}",
+                saved.getProductId(), saved.getProductName());
 
         return productMapper.toDto(saved);
     }
@@ -98,42 +120,72 @@ public class ProductService {
     @Transactional
     public ProductDto updateProduct(ProductDto productDto) {
         if (productDto.getProductId() == null) {
-            throw new IllegalArgumentException("Product ID must be provided for update");
+            log.error("Попытка обновления товара без указания ID");
+            throw new IllegalArgumentException("ID товара должен быть указан для обновления");
         }
 
-        log.info("Updating product: {}", productDto.getProductId());
+        log.info("Обновление товара с ID: {}", productDto.getProductId());
 
         Product existing = productRepository
                 .findById(productDto.getProductId())
-                .orElseThrow(() -> new ProductNotFoundException(
-                        "Product not found with id: " + productDto.getProductId()
-                ));
+                .orElseThrow(() -> {
+                    log.error("Товар не найден для обновления: {}", productDto.getProductId());
+                    return new ProductNotFoundException(
+                            "Товар не найден с ID: " + productDto.getProductId()
+                    );
+                });
+
+        log.debug("Текущее состояние товара: наименование='{}', цена={}, категория={}",
+                existing.getProductName(), existing.getPrice(), existing.getProductCategory());
+
+        boolean updated = false;
 
         // Обновляем только переданные поля
         if (productDto.getProductName() != null) {
+            log.debug("Обновление наименования: '{}' → '{}'",
+                    existing.getProductName(), productDto.getProductName());
             existing.setProductName(productDto.getProductName());
+            updated = true;
         }
         if (productDto.getDescription() != null) {
+            log.debug("Обновление описания товара");
             existing.setDescription(productDto.getDescription());
+            updated = true;
         }
         if (productDto.getImageSrc() != null) {
+            log.debug("Обновление ссылки на изображение: {}", productDto.getImageSrc());
             existing.setImageSrc(productDto.getImageSrc());
+            updated = true;
         }
         if (productDto.getPrice() != null) {
+            log.debug("Обновление цены: {} → {}",
+                    existing.getPrice(), productDto.getPrice());
             existing.setPrice(productDto.getPrice());
+            updated = true;
         }
         if (productDto.getProductCategory() != null) {
+            log.debug("Обновление категории: {} → {}",
+                    existing.getProductCategory(), productDto.getProductCategory());
             existing.setProductCategory(productDto.getProductCategory());
+            updated = true;
         }
         if (productDto.getQuantityState() != null) {
+            log.debug("Обновление статуса количества: {} → {}",
+                    existing.getQuantityState(), productDto.getQuantityState());
             existing.setQuantityState(productDto.getQuantityState());
+            updated = true;
         }
         // productState не обновляем - используется removeProductFromStore
 
-        Product updated = productRepository.save(existing);
-        log.info("Product updated: {}", updated.getProductId());
+        if (!updated) {
+            log.warn("Не передано ни одного поля для обновления товара {}",
+                    productDto.getProductId());
+        }
 
-        return productMapper.toDto(updated);
+        Product updatedProduct = productRepository.save(existing);
+        log.info("Товар успешно обновлен: {}", updatedProduct.getProductId());
+
+        return productMapper.toDto(updatedProduct);
     }
 
     /**
@@ -142,17 +194,27 @@ public class ProductService {
      */
     @Transactional
     public boolean removeProductFromStore(UUID productId) {
-        log.info("Removing product from store: {}", productId);
+        log.info("Деактивация товара (soft delete) с ID: {}", productId);
 
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new ProductNotFoundException(
-                        "Product not found with id: " + productId
-                ));
+                .orElseThrow(() -> {
+                    log.error("Товар не найден для деактивации: {}", productId);
+                    return new ProductNotFoundException(
+                            "Товар не найден с ID: " + productId
+                    );
+                });
 
+        if (product.getProductState() == ProductState.DEACTIVATE) {
+            log.warn("Товар {} уже деактивирован", productId);
+            return true;
+        }
+
+        log.debug("Изменение статуса товара {}: {} → {}",
+                productId, product.getProductState(), ProductState.DEACTIVATE);
         product.setProductState(ProductState.DEACTIVATE);
         productRepository.save(product);
 
-        log.info("Product deactivated: {}", productId);
+        log.info("Товар успешно деактивирован: {}", productId);
         return true;
     }
 
@@ -162,20 +224,27 @@ public class ProductService {
      */
     @Transactional
     public boolean setProductQuantityState(SetProductQuantityStateRequest request) {
-        log.info("Updating quantity state for product: {} to {}",
-                request.getProductId(),
-                request.getQuantityState()
-        );
+        log.info("Обновление статуса количества для товара: {} → {}",
+                request.getProductId(), request.getQuantityState());
 
         Product product = productRepository.findById(request.getProductId())
-                .orElseThrow(() -> new ProductNotFoundException(
-                        "Product not found with id: " + request.getProductId()
-                ));
+                .orElseThrow(() -> {
+                    log.error("Товар не найден для обновления статуса количества: {}",
+                            request.getProductId());
+                    return new ProductNotFoundException(
+                            "Товар не найден с ID: " + request.getProductId()
+                    );
+                });
+
+        log.debug("Статус количества товара {} обновлен: {} → {}",
+                request.getProductId(),
+                product.getQuantityState(),
+                request.getQuantityState());
 
         product.setQuantityState(request.getQuantityState());
         productRepository.save(product);
 
-        log.info("Quantity state updated for product: {}", request.getProductId());
+        log.info("Статус количества успешно обновлен для товара: {}", request.getProductId());
         return true;
     }
 }

@@ -5,25 +5,29 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.dto.*;
-import ru.yandex.practicum.exception.*;
+import ru.yandex.practicum.exception.NoSpecifiedProductInWarehouseException;
+import ru.yandex.practicum.exception.ProductInShoppingCartLowQuantityInWarehouse;
+import ru.yandex.practicum.exception.SpecifiedProductAlreadyInWarehouseException;
 import ru.yandex.practicum.mapper.WarehouseMapper;
 import ru.yandex.practicum.model.WarehouseProduct;
 import ru.yandex.practicum.repository.WarehouseProductRepository;
 
 import java.security.SecureRandom;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class WarehouseService {
 
-    private final WarehouseProductRepository warehouseProductRepository;
-    private final WarehouseMapper warehouseMapper;
-
     // Адреса склада
     private static final String[] ADDRESSES = {"ADDRESS_1", "ADDRESS_2"};
     private static final String CURRENT_ADDRESS = ADDRESSES[new SecureRandom().nextInt(ADDRESSES.length)];
+    private final WarehouseProductRepository warehouseProductRepository;
+    private final WarehouseMapper warehouseMapper;
 
     /**
      * Добавить новый товар на склад
@@ -31,12 +35,13 @@ public class WarehouseService {
      */
     @Transactional
     public void newProductInWarehouse(NewProductInWarehouseRequest request) {
-        log.info("Adding new product to warehouse: {}", request.getProductId());
+        log.info("Добавление нового товара на склад: {}", request.getProductId());
 
         // Проверяем, существует ли уже товар на складе
         if (warehouseProductRepository.existsById(request.getProductId())) {
+            log.warn("Товар уже существует на складе: {}", request.getProductId());
             throw new SpecifiedProductAlreadyInWarehouseException(
-                    "Product already exists in warehouse: " + request.getProductId()
+                    "Товар уже существует на складе: " + request.getProductId()
             );
         }
 
@@ -46,7 +51,7 @@ public class WarehouseService {
 
         // Сохраняем
         warehouseProductRepository.save(product);
-        log.info("Product added to warehouse: {}", request.getProductId());
+        log.info("Товар успешно добавлен на склад: {}", request.getProductId());
     }
 
     /**
@@ -55,10 +60,12 @@ public class WarehouseService {
      */
     @Transactional(readOnly = true)
     public BookedProductsDto checkProductQuantityEnoughForShoppingCart(ShoppingCartDto cart) {
-        log.info("Checking product availability for shopping cart: {}", cart.getShoppingCartId());
+        log.info("Проверка доступности товаров для корзины: {}",
+                cart != null ? cart.getShoppingCartId() : "null");
 
         if (cart == null || cart.getProducts() == null || cart.getProducts().isEmpty()) {
-            throw new IllegalArgumentException("Shopping cart is empty");
+            log.warn("Корзина пуста или не передана");
+            throw new IllegalArgumentException("Корзина пуста");
         }
 
         List<UUID> unavailableProducts = new ArrayList<>();
@@ -66,44 +73,62 @@ public class WarehouseService {
         double totalVolume = 0.0;
         boolean hasFragile = false;
 
+        log.info("Проверка {} товаров в корзине", cart.getProducts().size());
+
         // Проверяем каждый товар в корзине
         for (Map.Entry<UUID, Integer> entry : cart.getProducts().entrySet()) {
             UUID productId = entry.getKey();
             Integer requestedQuantity = entry.getValue();
 
+            log.debug("Проверка товара: {}, запрошено: {}", productId, requestedQuantity);
+
             WarehouseProduct product = warehouseProductRepository.findByProductId(productId)
-                    .orElseThrow(() -> new NoSpecifiedProductInWarehouseException(
-                            "Product not found in warehouse: " + productId
-                    ));
+                    .orElseThrow(() -> {
+                        log.error("Товар не найден на складе: {}", productId);
+                        return new NoSpecifiedProductInWarehouseException(
+                                "Товар не найден на складе: " + productId
+                        );
+                    });
+
+            log.debug("На складе: {}, запрошено: {}", product.getQuantity(), requestedQuantity);
 
             // Проверяем наличие достаточного количества
             if (product.getQuantity() < requestedQuantity) {
                 unavailableProducts.add(productId);
-                log.warn("Insufficient quantity for product {}. Available: {}, Requested: {}",
+                log.warn("Недостаточное количество товара {}. На складе: {}, Запрошено: {}",
                         productId, product.getQuantity(), requestedQuantity);
                 continue;
             }
 
             // Считаем общий вес
-            totalWeight += product.getWeight() * requestedQuantity;
+            double weight = product.getWeight() * requestedQuantity;
+            totalWeight += weight;
+            log.debug("Вес товара {}: {} кг", productId, weight);
 
             // Считаем общий объем (ширина * высота * глубина)
             double volume = product.getWidth() * product.getHeight() * product.getDepth();
-            totalVolume += volume * requestedQuantity;
+            double totalVolumeForProduct = volume * requestedQuantity;
+            totalVolume += totalVolumeForProduct;
+            log.debug("Объем товара {}: {} м³", productId, totalVolumeForProduct);
 
             // Проверяем на хрупкость
             if (product.isFragile()) {
                 hasFragile = true;
+                log.debug("Товар {} является хрупким", productId);
             }
         }
 
         // Если есть недоступные товары - выбрасываем исключение
         if (!unavailableProducts.isEmpty()) {
+            log.warn("Обнаружены товары с недостаточным количеством: {}", unavailableProducts);
             throw new ProductInShoppingCartLowQuantityInWarehouse(
-                    "Some products have insufficient quantity in warehouse",
+                    "Недостаточное количество товаров на складе",
                     unavailableProducts
             );
         }
+
+        log.info("Проверка завершена успешно. Общий вес: {} кг, Общий объем: {} м³, Хрупкие: {}",
+                totalWeight, totalVolume, hasFragile);
 
         // Возвращаем результат бронирования
         return BookedProductsDto.builder()
@@ -119,21 +144,25 @@ public class WarehouseService {
      */
     @Transactional
     public void addProductToWarehouse(AddProductToWarehouseRequest request) {
-        log.info("Adding product to warehouse: {}, quantity: {}",
+        log.info("Поступление товара на склад: {}, количество: {}",
                 request.getProductId(), request.getQuantity());
 
         WarehouseProduct product = warehouseProductRepository.findByProductId(request.getProductId())
-                .orElseThrow(() -> new NoSpecifiedProductInWarehouseException(
-                        "Product not found in warehouse: " + request.getProductId()
-                ));
+                .orElseThrow(() -> {
+                    log.error("Товар не найден на складе: {}", request.getProductId());
+                    return new NoSpecifiedProductInWarehouseException(
+                            "Товар не найден на складе: " + request.getProductId()
+                    );
+                });
 
         // Увеличиваем количество
-        int newQuantity = product.getQuantity() + request.getQuantity().intValue();
+        int oldQuantity = product.getQuantity();
+        int newQuantity = oldQuantity + request.getQuantity().intValue();
         product.setQuantity(newQuantity);
 
         warehouseProductRepository.save(product);
-        log.info("Product quantity updated. Product: {}, New quantity: {}",
-                request.getProductId(), newQuantity);
+        log.info("Количество товара обновлено. Товар: {}, Было: {}, Стало: {}",
+                request.getProductId(), oldQuantity, newQuantity);
     }
 
     /**
@@ -141,7 +170,7 @@ public class WarehouseService {
      * GET /api/v1/warehouse/address
      */
     public AddressDto getWarehouseAddress() {
-        log.info("Getting warehouse address: {}", CURRENT_ADDRESS);
+        log.info("Запрос адреса склада. Текущий адрес: {}", CURRENT_ADDRESS);
 
         // Преобразуем строку адреса в объект AddressDto
         return AddressDto.builder()

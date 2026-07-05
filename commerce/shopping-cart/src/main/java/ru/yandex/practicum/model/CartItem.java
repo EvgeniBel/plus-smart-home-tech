@@ -5,8 +5,11 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.FieldDefaults;
 
 import java.util.UUID;
+
+import static lombok.AccessLevel.PRIVATE;
 
 @Entity
 @Table(name = "cart_items")
@@ -14,21 +17,22 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@FieldDefaults(level = PRIVATE)
 public class CartItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cart_id", nullable = false)
-    private ShoppingCart cart;
+    ShoppingCart cart;
 
     @Column(nullable = false)
-    private UUID productId;
+    UUID productId;
 
     @Column(nullable = false)
-    private Integer quantity;
+    Integer quantity;
 
     @Column(nullable = false)
-    private Double priceAtAddition;
+    Double priceAtAddition;
 }

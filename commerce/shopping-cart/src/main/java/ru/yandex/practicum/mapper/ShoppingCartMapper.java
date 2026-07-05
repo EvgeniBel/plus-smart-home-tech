@@ -14,9 +14,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ShoppingCartMapper {
 
-    /**
-     * Преобразование ShoppingCart в ShoppingCartDto
-     */
+    // Преобразование ShoppingCart в ShoppingCartDto
     public ShoppingCartDto toDto(ShoppingCart cart) {
         if (cart == null) {
             return null;
@@ -29,9 +27,7 @@ public class ShoppingCartMapper {
         return dto;
     }
 
-    /**
-     * Преобразование списка элементов корзины в Map<UUID, Integer>
-     */
+    //Преобразование списка элементов корзины в Map<UUID, Integer>
     private Map<UUID, Integer> convertItemsToMap(ShoppingCart cart) {
         Map<UUID, Integer> products = new HashMap<>();
 

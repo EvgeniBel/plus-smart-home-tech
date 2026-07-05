@@ -4,16 +4,20 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.FieldDefaults;
 
 import java.util.UUID;
+
+import static lombok.AccessLevel.PRIVATE;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@FieldDefaults(level = PRIVATE)
 public class NewProductInWarehouseRequest {
-    private UUID productId;
-    private Boolean fragile;
-    private DimensionDto dimension;
-    private Double weight;
+    UUID productId;
+    Boolean fragile;
+    DimensionDto dimension;
+    Double weight;
 }

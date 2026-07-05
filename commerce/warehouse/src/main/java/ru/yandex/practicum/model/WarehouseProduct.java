@@ -1,12 +1,18 @@
 package ru.yandex.practicum.model;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.FieldDefaults;
 
 import java.util.UUID;
+
+import static lombok.AccessLevel.PRIVATE;
 
 @Entity
 @Table(name = "warehouse_products")
@@ -14,31 +20,32 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@FieldDefaults(level = PRIVATE)
 public class WarehouseProduct {
     @Id
-    private UUID productId;
+    UUID productId;
 
     @Column(nullable = false)
-    private String name;
+    String name;
 
     @Column(length = 1000)
-    private String description;
+    String description;
 
     @Column(nullable = false)
-    private Double weight;
+    Double weight;
 
     @Column(nullable = false)
-    private Double width;
+    Double width;
 
     @Column(nullable = false)
-    private Double height;
+    Double height;
 
     @Column(nullable = false)
-    private Double depth;
+    Double depth;
 
     @Column(nullable = false)
-    private boolean fragile;
+    boolean fragile;
 
     @Column(nullable = false)
-    private Integer quantity;
+    Integer quantity;
 }
