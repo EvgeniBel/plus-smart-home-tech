@@ -17,7 +17,7 @@ import java.util.UUID;
 @RequestMapping("/api/v1/shopping-store")
 @Slf4j
 @RequiredArgsConstructor
-public class ProductController implements ShoppingStoreClient {
+public class ShoppingStoreController implements ShoppingStoreClient {
 
     private final ProductService productService;
 
@@ -29,9 +29,7 @@ public class ProductController implements ShoppingStoreClient {
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String sort
     ) {
-        // Создаем Pageable из параметров
         Pageable pageable = PageRequest.of(page, size);
-
         log.info("GET /api/v1/shopping-store?category={}&page={}&size={}",
                 category, page, size);
         return productService.getProducts(category, pageable);

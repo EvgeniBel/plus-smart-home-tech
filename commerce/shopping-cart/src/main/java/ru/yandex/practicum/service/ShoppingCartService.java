@@ -1,13 +1,17 @@
 package ru.yandex.practicum.service;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.yandex.practicum.client.WarehouseClient;
+import ru.yandex.practicum.dto.BookedProductsDto;
 import ru.yandex.practicum.dto.ChangeProductQuantityRequest;
 import ru.yandex.practicum.dto.ShoppingCartDto;
 import ru.yandex.practicum.exception.NoProductsInShoppingCartException;
 import ru.yandex.practicum.exception.NotAuthorizedUserException;
+import ru.yandex.practicum.exception.ProductInShoppingCartLowQuantityInWarehouse;
 import ru.yandex.practicum.mapper.ShoppingCartMapper;
 import ru.yandex.practicum.model.CartItem;
 import ru.yandex.practicum.model.ShoppingCart;
@@ -27,59 +31,80 @@ public class ShoppingCartService {
     private final ShoppingCartRepository shoppingCartRepository;
     private final CartItemRepository cartItemRepository;
     private final ShoppingCartMapper shoppingCartMapper;
+    private final WarehouseClient warehouseClient;
 
-    /**
-     * Получить актуальную корзину для авторизованного пользователя
-     */
     @Transactional(readOnly = true)
     public ShoppingCartDto getShoppingCart(String username) {
         validateUsername(username);
-
         ShoppingCart cart = getOrCreateActiveCart(username);
         log.info("Retrieved shopping cart for user: {}", username);
-
         return shoppingCartMapper.toDto(cart);
     }
 
-    /**
-     * Добавить товар в корзину
-     */
     @Transactional
     public ShoppingCartDto addProductToShoppingCart(String username, Map<UUID, Integer> products) {
         validateUsername(username);
         validateProducts(products);
 
+        // Получаем текущую корзину
         ShoppingCart cart = getOrCreateActiveCart(username);
 
+        // Добавляем товары в корзину
         for (Map.Entry<UUID, Integer> entry : products.entrySet()) {
             UUID productId = entry.getKey();
             Integer quantity = entry.getValue();
 
-            // Проверяем, есть ли уже такой товар в корзине
             CartItem existingItem = findCartItem(cart, productId);
 
             if (existingItem != null) {
-                // Обновляем количество существующего товара
                 existingItem.setQuantity(existingItem.getQuantity() + quantity);
                 log.info("Updated quantity for product {} in cart: new quantity {}",
                         productId, existingItem.getQuantity());
             } else {
-                // Создаем новый элемент корзины
                 CartItem newItem = createCartItem(cart, productId, quantity);
                 cart.getItems().add(newItem);
                 log.info("Added new product {} to cart with quantity {}", productId, quantity);
             }
         }
 
+        // Сохраняем корзину
         ShoppingCart savedCart = shoppingCartRepository.save(cart);
-        log.info("Products added to cart for user: {}", username);
 
+        // Проверяем наличие товаров на складе через отдельный метод с Circuit Breaker
+        checkWarehouseAvailability(username, savedCart);
+
+        log.info("Products added to cart for user: {}", username);
         return shoppingCartMapper.toDto(savedCart);
     }
 
     /**
-     * Удалить товары из корзины
+     * Проверка наличия товаров на складе с Circuit Breaker
      */
+    @CircuitBreaker(name = "warehouseService", fallbackMethod = "warehouseFallback")
+    protected void checkWarehouseAvailability(String username, ShoppingCart cart) {
+        ShoppingCartDto cartDto = shoppingCartMapper.toDto(cart);
+        BookedProductsDto bookedProducts = warehouseClient.checkProductQuantityEnoughForShoppingCart(cartDto);
+        log.info("Warehouse check passed for user: {}. Delivery weight: {}, volume: {}, fragile: {}",
+                username, bookedProducts.getDeliveryWeight(),
+                bookedProducts.getDeliveryVolume(), bookedProducts.getFragile());
+    }
+
+    /**
+     * Fallback метод для Circuit Breaker
+     */
+    protected void warehouseFallback(String username, ShoppingCart cart, Throwable throwable) {
+        log.warn("Circuit breaker fallback for warehouse check. User: {}, Error: {}",
+                username, throwable.getMessage());
+
+        // Если ошибка не связана с недостатком товаров, просто логируем
+        if (throwable instanceof ProductInShoppingCartLowQuantityInWarehouse) {
+            throw (ProductInShoppingCartLowQuantityInWarehouse) throwable;
+        }
+
+        // В остальных случаях - логируем и продолжаем (warehouse недоступен)
+        log.warn("Warehouse service is unavailable. Products added without availability check.");
+    }
+
     @Transactional
     public ShoppingCartDto removeFromShoppingCart(String username, List<UUID> productIds) {
         validateUsername(username);
@@ -90,14 +115,8 @@ public class ShoppingCartService {
 
         ShoppingCart cart = getActiveCart(username);
 
-        // Проверяем, есть ли хотя бы один товар из списка в корзине
-        boolean hasAnyProduct = false;
-        for (CartItem item : cart.getItems()) {
-            if (productIds.contains(item.getProductId())) {
-                hasAnyProduct = true;
-                break;
-            }
-        }
+        boolean hasAnyProduct = cart.getItems().stream()
+                .anyMatch(item -> productIds.contains(item.getProductId()));
 
         if (!hasAnyProduct) {
             throw new NoProductsInShoppingCartException(
@@ -105,19 +124,14 @@ public class ShoppingCartService {
             );
         }
 
-        // Удаляем товары
         cartItemRepository.deleteByCartAndProductIdIn(cart, productIds);
 
-        // Обновляем корзину
         ShoppingCart updatedCart = shoppingCartRepository.save(cart);
         log.info("Products removed from cart for user: {}", username);
 
         return shoppingCartMapper.toDto(updatedCart);
     }
 
-    /**
-     * Изменить количество товара в корзине
-     */
     @Transactional
     public ShoppingCartDto changeProductQuantity(String username, ChangeProductQuantityRequest request) {
         validateUsername(username);
@@ -140,7 +154,6 @@ public class ShoppingCartService {
         }
 
         if (request.getNewQuantity() == 0) {
-            // Если количество 0, удаляем товар из корзины
             cart.getItems().remove(cartItem);
             cartItemRepository.delete(cartItem);
             log.info("Product {} removed from cart (quantity set to 0)", request.getProductId());
@@ -156,9 +169,6 @@ public class ShoppingCartService {
         return shoppingCartMapper.toDto(updatedCart);
     }
 
-    /**
-     * Деактивация корзины
-     */
     @Transactional
     public void deactivateCurrentShoppingCart(String username) {
         validateUsername(username);
@@ -172,45 +182,29 @@ public class ShoppingCartService {
 
     // ============ ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ============
 
-    /**
-     * Получить или создать активную корзину для пользователя
-     */
     private ShoppingCart getOrCreateActiveCart(String username) {
-        ShoppingCart cart = shoppingCartRepository.findByUsernameAndActiveTrue(username).orElse(null);
-
-        if (cart == null) {
-            cart = createNewCart(username);
-        }
-
-        return cart;
+        return shoppingCartRepository
+                .findByUsernameAndActiveTrue(username)
+                .orElseGet(() -> createNewCart(username));
     }
 
-    /**
-     * Получить активную корзину пользователя
-     */
     private ShoppingCart getActiveCart(String username) {
-        ShoppingCart cart = shoppingCartRepository.findByUsernameAndActiveTrue(username)
+        return shoppingCartRepository
+                .findByUsernameAndActiveTrue(username)
                 .orElseThrow(() -> new NotAuthorizedUserException(
                         "No active cart found for user: " + username
                 ));
-        return cart;
     }
 
-    /**
-     * Создать новую корзину для пользователя
-     */
     private ShoppingCart createNewCart(String username) {
-        ShoppingCart newCart = new ShoppingCart();
-        newCart.setUsername(username);
-        newCart.setActive(true);
-        newCart.setItems(new ArrayList<>());
-
+        ShoppingCart newCart = ShoppingCart.builder()
+                .username(username)
+                .active(true)
+                .items(new ArrayList<>())
+                .build();
         return shoppingCartRepository.save(newCart);
     }
 
-    /**
-     * Найти элемент корзины по ID товара
-     */
     private CartItem findCartItem(ShoppingCart cart, UUID productId) {
         if (cart == null || cart.getItems() == null) {
             return null;
@@ -225,30 +219,21 @@ public class ShoppingCartService {
         return null;
     }
 
-    /**
-     * Создать новый элемент корзины
-     */
     private CartItem createCartItem(ShoppingCart cart, UUID productId, Integer quantity) {
-        CartItem item = new CartItem();
-        item.setCart(cart);
-        item.setProductId(productId);
-        item.setQuantity(quantity);
-        item.setPriceAtAddition(0.0); // Позже будет обновляться из сервиса товаров
-        return item;
+        return CartItem.builder()
+                .cart(cart)
+                .productId(productId)
+                .quantity(quantity)
+                .priceAtAddition(0.0)
+                .build();
     }
 
-    /**
-     * Валидация имени пользователя
-     */
     private void validateUsername(String username) {
         if (username == null || username.trim().isEmpty()) {
             throw new NotAuthorizedUserException("Username cannot be empty");
         }
     }
 
-    /**
-     * Валидация списка товаров
-     */
     private void validateProducts(Map<UUID, Integer> products) {
         if (products == null || products.isEmpty()) {
             throw new IllegalArgumentException("Products map cannot be empty");
