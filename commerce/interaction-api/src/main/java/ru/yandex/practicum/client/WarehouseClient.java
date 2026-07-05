@@ -4,21 +4,18 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.dto.*;
 
-import java.util.UUID;
-
 @FeignClient(name = "warehouse")
 public interface WarehouseClient {
 
+    @PutMapping("/api/v1/warehouse")
+    void newProductInWarehouse(@RequestBody NewProductInWarehouseRequest request);
+
     @PostMapping("/api/v1/warehouse/check")
-    AvailabilityResponse checkAvailability(@RequestBody ShoppingCartDto cart);
+    BookedProductsDto checkProductQuantityEnoughForShoppingCart(@RequestBody ShoppingCartDto cart);
+
+    @PostMapping("/api/v1/warehouse/add")
+    void addProductToWarehouse(@RequestBody AddProductToWarehouseRequest request);
 
     @GetMapping("/api/v1/warehouse/address")
     AddressDto getWarehouseAddress();
-
-    @PostMapping("/api/v1/warehouse/products")
-    WarehouseProductDto addProduct(@RequestBody AddProductRequest request);
-
-    @PutMapping("/api/v1/warehouse/products/{productId}")
-    WarehouseProductDto updateProductQuantity(@PathVariable("productId") UUID productId,
-                                              @RequestBody QuantityUpdateRequest request);
 }

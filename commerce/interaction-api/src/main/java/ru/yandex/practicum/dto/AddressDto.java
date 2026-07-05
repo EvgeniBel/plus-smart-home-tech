@@ -6,14 +6,19 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 @Data
-@AllArgsConstructor
+@Builder
 @NoArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE)
+@AllArgsConstructor
 public class AddressDto {
-    String country;
-    String city;
-    String street;
-    String house;
-    String apartment;
+    private String country;
+    private String city;
+    private String street;
+    private String house;
+    private String flat;
 }

@@ -1,5 +1,10 @@
 package ru.yandex.practicum.model;
 
+import org.springframework.stereotype.Component;
+import ru.yandex.practicum.dto.AddressDto;
+
+import java.util.Random;
+
 @Component
 public class WarehouseAddress {
     private static final String[] ADDRESSES =
@@ -14,7 +19,7 @@ public class WarehouseAddress {
                 .city(CURRENT_ADDRESS)
                 .street(CURRENT_ADDRESS)
                 .house(CURRENT_ADDRESS)
-                .apartment(CURRENT_ADDRESS)
+                .flat(CURRENT_ADDRESS)
                 .build();
     }
 }
