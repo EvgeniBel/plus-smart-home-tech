@@ -1,10 +1,12 @@
 package ru.yandex.practicum.model;
 
-
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.UUID;
 
 @Entity
 @Table(name = "cart_items")
@@ -17,11 +19,16 @@ public class CartItem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "cart_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cart_id", nullable = false)
     private ShoppingCart cart;
 
-    private Long productId;
+    @Column(nullable = false)
+    private UUID productId;
+
+    @Column(nullable = false)
     private Integer quantity;
-    private Double priceAtAddition;  // Цена на момент добавления
+
+    @Column(nullable = false)
+    private Double priceAtAddition;
 }

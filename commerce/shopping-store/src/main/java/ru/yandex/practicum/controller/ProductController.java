@@ -1,11 +1,10 @@
 package ru.yandex.practicum.controller;
 
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.client.ShoppingStoreClient;
 import ru.yandex.practicum.dto.ProductDto;
@@ -26,10 +25,15 @@ public class ProductController implements ShoppingStoreClient {
     @GetMapping
     public Page<ProductDto> getProducts(
             @RequestParam String category,
-            @PageableDefault(size = 20) Pageable pageable
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String sort
     ) {
+        // Создаем Pageable из параметров
+        Pageable pageable = PageRequest.of(page, size);
+
         log.info("GET /api/v1/shopping-store?category={}&page={}&size={}",
-                category, pageable.getPageNumber(), pageable.getPageSize());
+                category, page, size);
         return productService.getProducts(category, pageable);
     }
 
