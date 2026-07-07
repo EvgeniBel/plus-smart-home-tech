@@ -9,12 +9,12 @@ import ru.yandex.practicum.model.WarehouseProduct;
 public class WarehouseMapper {
 
     public WarehouseProduct toEntity(NewProductInWarehouseRequest request) {
-        if (request == null) {
-            return null;
-        }
+        if (request == null) return null;
 
         return WarehouseProduct.builder()
                 .productId(request.getProductId())
+                .name(request.getName())
+                .description(request.getDescription())
                 .weight(request.getWeight())
                 .fragile(request.getFragile() != null && request.getFragile())
                 .quantity(0)

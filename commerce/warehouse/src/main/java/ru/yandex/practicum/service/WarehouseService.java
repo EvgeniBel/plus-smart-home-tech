@@ -9,12 +9,13 @@ import ru.yandex.practicum.exception.NoSpecifiedProductInWarehouseException;
 import ru.yandex.practicum.exception.ProductInShoppingCartLowQuantityInWarehouse;
 import ru.yandex.practicum.exception.SpecifiedProductAlreadyInWarehouseException;
 import ru.yandex.practicum.mapper.WarehouseMapper;
+import ru.yandex.practicum.model.WarehouseAddress;
 import ru.yandex.practicum.model.WarehouseProduct;
 import ru.yandex.practicum.repository.WarehouseProductRepository;
 
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -24,10 +25,7 @@ public class WarehouseService {
 
     private final WarehouseProductRepository warehouseProductRepository;
     private final WarehouseMapper warehouseMapper;
-
-    // Адреса склада
-    private static final String[] ADDRESSES = {"ADDRESS_1", "ADDRESS_2"};
-    private static final String CURRENT_ADDRESS = ADDRESSES[new SecureRandom().nextInt(ADDRESSES.length)];
+    private final WarehouseAddress warehouseAddress;
 
     /**
      * Добавить новый товар на склад
@@ -35,6 +33,10 @@ public class WarehouseService {
     @Transactional
     public void newProductInWarehouse(NewProductInWarehouseRequest request) {
         log.info("Добавление нового товара на склад: {}", request.getProductId());
+
+        if (request == null) {
+            throw new IllegalArgumentException("Request cannot be null");
+        }
 
         if (warehouseProductRepository.existsById(request.getProductId())) {
             log.warn("Товар уже существует на складе: {}", request.getProductId());
@@ -59,7 +61,6 @@ public class WarehouseService {
                 cart != null ? cart.getShoppingCartId() : "null");
 
         if (cart == null || cart.getProducts() == null || cart.getProducts().isEmpty()) {
-            log.warn("Корзина пуста или не передана");
             throw new IllegalArgumentException("Корзина пуста");
         }
 
@@ -68,14 +69,14 @@ public class WarehouseService {
         double totalVolume = 0.0;
         boolean hasFragile = false;
 
-        log.info("Проверка {} товаров в корзине", cart.getProducts().size());
+        for (Map.Entry<UUID, Long> entry : cart.getProducts().entrySet()) {
+            UUID productId = entry.getKey();
+            Long requestedQuantity = entry.getValue();
 
-        // ✅ ИСПРАВЛЕНО: итерируем по List<CartItemDto>
-        for (CartItemDto item : cart.getProducts()) {
-            UUID productId = item.getProductId();
-            Integer requestedQuantity = item.getQuantity();
-
-            log.debug("Проверка товара: {}, запрошено: {}", productId, requestedQuantity);
+            if (requestedQuantity == null || requestedQuantity <= 0) {
+                log.warn("Некорректное количество для товара {}: {}", productId, requestedQuantity);
+                continue;
+            }
 
             WarehouseProduct product = warehouseProductRepository.findByProductId(productId)
                     .orElseThrow(() -> {
@@ -85,12 +86,10 @@ public class WarehouseService {
                         );
                     });
 
-            log.debug("На складе: {}, запрошено: {}", product.getQuantity(), requestedQuantity);
-
             if (product.getQuantity() < requestedQuantity) {
-                unavailableProducts.add(productId);
                 log.warn("Недостаточное количество товара {}. На складе: {}, Запрошено: {}",
                         productId, product.getQuantity(), requestedQuantity);
+                unavailableProducts.add(productId);
                 continue;
             }
 
@@ -100,7 +99,6 @@ public class WarehouseService {
 
             if (product.isFragile()) {
                 hasFragile = true;
-                log.debug("Товар {} является хрупким", productId);
             }
         }
 
@@ -127,6 +125,13 @@ public class WarehouseService {
      */
     @Transactional
     public void addProductToWarehouse(AddProductToWarehouseRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("Request cannot be null");
+        }
+        if (request.getQuantity() == null || request.getQuantity() <= 0) {
+            throw new IllegalArgumentException("Quantity must be positive");
+        }
+
         log.info("Поступление товара на склад: {}, количество: {}",
                 request.getProductId(), request.getQuantity());
 
@@ -151,14 +156,8 @@ public class WarehouseService {
      * Получить адрес склада
      */
     public AddressDto getWarehouseAddress() {
-        log.info("Запрос адреса склада. Текущий адрес: {}", CURRENT_ADDRESS);
-
-        return AddressDto.builder()
-                .country(CURRENT_ADDRESS)
-                .city(CURRENT_ADDRESS)
-                .street(CURRENT_ADDRESS)
-                .house(CURRENT_ADDRESS)
-                .flat(CURRENT_ADDRESS)
-                .build();
+        AddressDto address = warehouseAddress.getAddress();
+        log.info("Запрос адреса склада: {}", address);
+        return address;
     }
 }

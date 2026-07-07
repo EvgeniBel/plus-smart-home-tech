@@ -1,5 +1,8 @@
 package ru.yandex.practicum.dto;
 
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,8 +19,20 @@ import static lombok.AccessLevel.PRIVATE;
 @AllArgsConstructor
 @FieldDefaults(level = PRIVATE)
 public class NewProductInWarehouseRequest {
+    @NotNull
     UUID productId;
-    Boolean fragile;
-    DimensionDto dimension;
+
+    @NotBlank
+    String name;
+
+    String description;
+
+    @NotNull
+    @Min(1)
     Double weight;
+
+    @NotNull
+    DimensionDto dimension;
+
+    Boolean fragile;
 }
