@@ -1,5 +1,6 @@
 package ru.yandex.practicum.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -17,7 +18,7 @@ public class WarehouseController implements WarehouseClient {
 
     @Override
     @PutMapping
-    public void newProductInWarehouse(@RequestBody NewProductInWarehouseRequest request) {
+    public void newProductInWarehouse(@Valid @RequestBody NewProductInWarehouseRequest request) {
         log.info("PUT /api/v1/warehouse - request: {}", request);
         warehouseService.newProductInWarehouse(request);
     }

@@ -178,40 +178,36 @@ public class ShoppingCartService {
         validateUsername(username);
 
         if (request.getProductId() == null) {
-            log.warn("ID товара не может быть null");
             throw new IllegalArgumentException("ID товара не может быть null");
         }
 
         if (request.getNewQuantity() == null || request.getNewQuantity() < 0) {
-            log.warn("Количество должно быть неотрицательным: {}", request.getNewQuantity());
             throw new IllegalArgumentException("Количество должно быть неотрицательным");
         }
 
         ShoppingCart cart = getActiveCart(username);
-        log.debug("Найдена активная корзина, ID: {}", cart.getId());
-
         CartItem cartItem = findCartItem(cart, request.getProductId());
+
         if (cartItem == null) {
-            log.warn("Товар {} не найден в корзине пользователя {}", request.getProductId(), username);
             throw new NoProductsInShoppingCartException(
                     "Товар не найден в корзине: " + request.getProductId()
             );
         }
 
-        if (request.getNewQuantity() == 0) {
+        int newQuantity = request.getNewQuantity().intValue();
+
+        if (newQuantity == 0) {
             cart.getItems().remove(cartItem);
             cartItemRepository.delete(cartItem);
             log.info("Товар {} удален из корзины (количество установлено в 0)", request.getProductId());
         } else {
             int oldQuantity = cartItem.getQuantity();
-            cartItem.setQuantity(request.getNewQuantity());
+            cartItem.setQuantity(newQuantity);
             log.info("Количество товара {} изменено: {} → {}",
-                    request.getProductId(), oldQuantity, request.getNewQuantity());
+                    request.getProductId(), oldQuantity, newQuantity);
         }
 
         ShoppingCart updatedCart = shoppingCartRepository.save(cart);
-        log.info("Количество товара успешно изменено для пользователя: {}", username);
-
         return shoppingCartMapper.toDto(updatedCart);
     }
 
