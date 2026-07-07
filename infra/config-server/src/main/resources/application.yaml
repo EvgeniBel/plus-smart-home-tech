@@ -10,8 +10,8 @@ spring:
     config:
       server:
         native:
-          searchLocations: file:///D:/Practicum/sprint20/infra/config-server/src/main/resources/config/telemetry/{application},
-            file:///D:/Practicum/sprint20/infra/config-server/src/main/resources/config/commerce/{application}
+          searchLocations: classpath:config/telemetry/{application},
+            classpath:config/commerce/{application}
 eureka:
   client:
     serviceUrl:
