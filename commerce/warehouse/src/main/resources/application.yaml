@@ -4,8 +4,10 @@ server:
 spring:
   application:
     name: warehouse
+
   config:
     import: "optional:configserver:"
+
   cloud:
     config:
       discovery:
@@ -16,6 +18,23 @@ spring:
         max-attempts: 6
         initial-interval: 1000
         multiplier: 1.1
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/warehouse
+    username: postgres
+    password: password
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        show_sql: false
+        use_sql_comments: true
+    open-in-view: false
 
 eureka:
   client:

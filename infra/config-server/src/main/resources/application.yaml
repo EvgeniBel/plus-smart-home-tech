@@ -1,5 +1,5 @@
 server:
-  port: 0
+  port: 60241
 
 spring:
   application:
@@ -10,8 +10,8 @@ spring:
     config:
       server:
         native:
-          searchLocations: classpath:/config
-
+          searchLocations: file:///D:/Practicum/sprint20/infra/config-server/src/main/resources/config/telemetry/{application},
+            file:///D:/Practicum/sprint20/infra/config-server/src/main/resources/config/commerce/{application}
 eureka:
   client:
     serviceUrl:
