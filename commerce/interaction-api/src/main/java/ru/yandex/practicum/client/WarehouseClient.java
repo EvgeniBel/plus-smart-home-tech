@@ -1,8 +1,11 @@
 package ru.yandex.practicum.client;
 
-import jakarta.validation.Valid;  // ← ВАЖНО: импорт из jakarta.validation
+import jakarta.validation.Valid;
 import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import ru.yandex.practicum.dto.*;
 
 @FeignClient(name = "warehouse")

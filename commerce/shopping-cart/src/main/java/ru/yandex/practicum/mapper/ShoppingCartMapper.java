@@ -7,9 +7,7 @@ import ru.yandex.practicum.dto.ShoppingCartDto;
 import ru.yandex.practicum.model.CartItem;
 import ru.yandex.practicum.model.ShoppingCart;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Component
 @RequiredArgsConstructor
@@ -19,15 +17,17 @@ public class ShoppingCartMapper {
      * Преобразование ShoppingCart в ShoppingCartDto
      */
     public ShoppingCartDto toDto(ShoppingCart cart) {
-        if (cart == null) {
-            return null;
+        if (cart == null) return null;
+
+        Map<UUID, Long> products = new HashMap<>();
+        for (CartItem item : cart.getItems()) {
+            products.put(item.getProductId(), (long) item.getQuantity());
         }
 
-        ShoppingCartDto dto = new ShoppingCartDto();
-        dto.setShoppingCartId(cart.getId());
-        dto.setProducts(convertItemsToList(cart));  // ← Теперь List
-
-        return dto;
+        return ShoppingCartDto.builder()
+                .shoppingCartId(cart.getId())
+                .products(products)
+                .build();
     }
 
     /**

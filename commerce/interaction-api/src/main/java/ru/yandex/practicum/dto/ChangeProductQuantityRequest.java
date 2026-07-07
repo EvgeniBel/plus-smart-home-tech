@@ -17,5 +17,5 @@ import static lombok.AccessLevel.PRIVATE;
 @FieldDefaults(level = PRIVATE)
 public class ChangeProductQuantityRequest {
     UUID productId;
-    Integer newQuantity;
+    Long newQuantity;
 }

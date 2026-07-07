@@ -1,8 +1,12 @@
--- Создание базы данных
-CREATE DATABASE shopping_cart;
+-- Создание базы данных (если не существует)
+CREATE DATABASE IF NOT EXISTS shopping_cart;
 
 -- Подключение к базе
 \c shopping_cart;
+
+-- ============================================
+-- Создание таблиц
+-- ============================================
 
 -- Создание таблицы корзин
 CREATE TABLE IF NOT EXISTS carts (
@@ -16,36 +20,36 @@ CREATE TABLE IF NOT EXISTS carts (
 -- Создание таблицы элементов корзины
 CREATE TABLE IF NOT EXISTS cart_items (
     id BIGSERIAL PRIMARY KEY,
-    cart_id UUID NOT NULL REFERENCES carts(id) ON DELETE CASCADE,
+    cart_id UUID NOT NULL,
     product_id UUID NOT NULL,
-    quantity INTEGER NOT NULL,
-    price_at_addition DECIMAL(19,2) NOT NULL
+    quantity INTEGER NOT NULL DEFAULT 1,
+    price_at_addition DECIMAL(19,2) NOT NULL DEFAULT 0.00,
+    CONSTRAINT fk_cart_items_cart FOREIGN KEY (cart_id)
+        REFERENCES carts(id) ON DELETE CASCADE
 );
 
+-- ============================================
 -- Индексы для оптимизации
-CREATE INDEX idx_cart_items_cart_id ON cart_items(cart_id);
-CREATE INDEX idx_cart_items_product_id ON cart_items(product_id);
-CREATE INDEX idx_carts_username ON carts(username);
-CREATE INDEX idx_carts_active ON carts(active);
+-- ============================================
 
--- Тестовые данные
-INSERT INTO carts (id, username, active) VALUES
-    (gen_random_uuid(), 'test_user1', true),
-    (gen_random_uuid(), 'test_user2', true),
-    (gen_random_uuid(), 'test_user3', false);
+CREATE INDEX IF NOT EXISTS idx_cart_items_cart_id ON cart_items(cart_id);
+CREATE INDEX IF NOT EXISTS idx_cart_items_product_id ON cart_items(product_id);
+CREATE INDEX IF NOT EXISTS idx_carts_username ON carts(username);
+CREATE INDEX IF NOT EXISTS idx_carts_active ON carts(active);
 
-INSERT INTO cart_items (cart_id, product_id, quantity, price_at_addition)
-SELECT
-    c.id,
-    '123e4567-e89b-12d3-a456-426614174000'::UUID,
-    2,
-    1499.99
-FROM carts c WHERE c.username = 'test_user1';
+-- ============================================
+-- Триггер для обновления updated_at
+-- ============================================
 
-INSERT INTO cart_items (cart_id, product_id, quantity, price_at_addition)
-SELECT
-    c.id,
-    '223e4567-e89b-12d3-a456-426614174001'::UUID,
-    1,
-    899.50
-FROM carts c WHERE c.username = 'test_user1';
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_carts_updated_at
+    BEFORE UPDATE ON carts
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
