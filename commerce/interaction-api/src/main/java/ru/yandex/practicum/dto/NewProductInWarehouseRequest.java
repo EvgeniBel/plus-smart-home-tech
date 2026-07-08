@@ -22,7 +22,6 @@ public class NewProductInWarehouseRequest {
     @NotNull
     UUID productId;
 
-    @NotBlank
     String name;
 
     String description;
@@ -34,6 +33,5 @@ public class NewProductInWarehouseRequest {
     @NotNull
     DimensionDto dimension;
 
-    @NotNull
     Boolean fragile;
 }
