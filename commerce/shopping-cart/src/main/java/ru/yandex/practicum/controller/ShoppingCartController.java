@@ -33,7 +33,7 @@ public class ShoppingCartController implements ShoppingCartClient {
     @PutMapping
     public ShoppingCartDto addProductToShoppingCart(
             @RequestParam String username,
-            @Valid @RequestBody Map<UUID, Integer> products
+            @RequestParam Map<UUID, Integer> products
     ) {
         log.info("PUT /api/v1/shopping-cart?username={}, products={}", username, products);
         return shoppingCartService.addProductToShoppingCart(username, products);
