@@ -98,7 +98,7 @@ public class ProductService {
                 productDto.getPrice(),
                 productDto.getProductCategory());
 
-        Product product = productMapper.toEntity(productDto);
+        Product product = productMapper.toEntityForCreate(productDto);
         product.setProductState(ProductState.ACTIVE);
 
         if (product.getQuantityState() == null) {
@@ -120,71 +120,49 @@ public class ProductService {
     @Transactional
     public ProductDto updateProduct(ProductDto productDto) {
         if (productDto.getProductId() == null) {
-            log.error("Попытка обновления товара без указания ID");
             throw new IllegalArgumentException("ID товара должен быть указан для обновления");
         }
 
         log.info("Обновление товара с ID: {}", productDto.getProductId());
 
-        Product existing = productRepository
-                .findById(productDto.getProductId())
-                .orElseThrow(() -> {
-                    log.error("Товар не найден для обновления: {}", productDto.getProductId());
-                    return new ProductNotFoundException(
-                            "Товар не найден с ID: " + productDto.getProductId()
-                    );
-                });
-
-        log.debug("Текущее состояние товара: наименование='{}', цена={}, категория={}",
-                existing.getProductName(), existing.getPrice(), existing.getProductCategory());
+        Product existing = productRepository.findById(productDto.getProductId())
+                .orElseThrow(() -> new ProductNotFoundException("Товар не найден с ID: " + productDto.getProductId()));
 
         boolean updated = false;
 
-        // Обновляем только переданные поля
         if (productDto.getProductName() != null) {
-            log.debug("Обновление наименования: '{}' → '{}'",
-                    existing.getProductName(), productDto.getProductName());
             existing.setProductName(productDto.getProductName());
             updated = true;
         }
         if (productDto.getDescription() != null) {
-            log.debug("Обновление описания товара");
             existing.setDescription(productDto.getDescription());
             updated = true;
         }
         if (productDto.getImageSrc() != null) {
-            log.debug("Обновление ссылки на изображение: {}", productDto.getImageSrc());
             existing.setImageSrc(productDto.getImageSrc());
             updated = true;
         }
         if (productDto.getPrice() != null) {
-            log.debug("Обновление цены: {} → {}",
-                    existing.getPrice(), productDto.getPrice());
+            if (productDto.getPrice() <= 0) {
+                throw new IllegalArgumentException("Price must be greater than 0");
+            }
             existing.setPrice(productDto.getPrice());
             updated = true;
         }
         if (productDto.getProductCategory() != null) {
-            log.debug("Обновление категории: {} → {}",
-                    existing.getProductCategory(), productDto.getProductCategory());
             existing.setProductCategory(productDto.getProductCategory());
             updated = true;
         }
         if (productDto.getQuantityState() != null) {
-            log.debug("Обновление статуса количества: {} → {}",
-                    existing.getQuantityState(), productDto.getQuantityState());
             existing.setQuantityState(productDto.getQuantityState());
             updated = true;
         }
-        // productState не обновляем - используется removeProductFromStore
 
         if (!updated) {
-            log.warn("Не передано ни одного поля для обновления товара {}",
-                    productDto.getProductId());
+            log.warn("Не передано ни одного поля для обновления товара {}", productDto.getProductId());
         }
 
         Product updatedProduct = productRepository.save(existing);
-        log.info("Товар успешно обновлен: {}", updatedProduct.getProductId());
-
         return productMapper.toDto(updatedProduct);
     }
 
@@ -194,6 +172,9 @@ public class ProductService {
      */
     @Transactional
     public boolean removeProductFromStore(UUID productId) {
+        if (productId == null) {
+            throw new IllegalArgumentException("productId must not be null");
+        }
         log.info("Деактивация товара (soft delete) с ID: {}", productId);
 
         Product product = productRepository.findById(productId)

@@ -1,5 +1,6 @@
 package ru.yandex.practicum.dto;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,6 +18,9 @@ import static lombok.AccessLevel.PRIVATE;
 @AllArgsConstructor
 @FieldDefaults(level = PRIVATE)
 public class SetProductQuantityStateRequest {
+    @NotNull(message = "productId must not be null")
     UUID productId;
+
+    @NotNull(message = "quantityState must not be null")
     QuantityState quantityState;
 }

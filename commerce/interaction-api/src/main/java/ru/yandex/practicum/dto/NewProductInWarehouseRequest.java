@@ -34,5 +34,6 @@ public class NewProductInWarehouseRequest {
     @NotNull
     DimensionDto dimension;
 
+    @NotNull
     Boolean fragile;
 }
