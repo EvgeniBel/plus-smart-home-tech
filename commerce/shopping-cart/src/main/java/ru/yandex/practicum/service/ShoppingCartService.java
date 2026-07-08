@@ -100,6 +100,10 @@ public class ShoppingCartService {
      */
     @CircuitBreaker(name = "warehouseService", fallbackMethod = "warehouseFallback")
     protected void checkWarehouseAvailability(String username, ShoppingCart cart) {
+        if (cart == null || cart.getItems() == null || cart.getItems().isEmpty()) {
+            log.info("Корзина пуста, проверка склада не требуется");
+            return;
+        }
         log.info("Проверка наличия товаров на складе для пользователя: {}", username);
 
         ShoppingCartDto cartDto = shoppingCartMapper.toDto(cart);

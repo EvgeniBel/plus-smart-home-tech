@@ -32,11 +32,16 @@ public class WarehouseService {
      */
     @Transactional
     public void newProductInWarehouse(NewProductInWarehouseRequest request) {
-        log.info("Добавление нового товара на склад: {}", request.getProductId());
-
         if (request == null) {
             throw new IllegalArgumentException("Request cannot be null");
         }
+        log.info("Добавление нового товара на склад: {}", request.getProductId());
+
+        if (request.getName() == null || request.getName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Product name cannot be empty");
+        }
+        log.info("Добавление нового товара на склад: {}", request.getProductId());
+
 
         if (warehouseProductRepository.existsById(request.getProductId())) {
             log.warn("Товар уже существует на складе: {}", request.getProductId());

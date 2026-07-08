@@ -1,7 +1,9 @@
 package ru.yandex.practicum.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.client.ShoppingCartClient;
 import ru.yandex.practicum.dto.ChangeProductQuantityRequest;
@@ -31,7 +33,7 @@ public class ShoppingCartController implements ShoppingCartClient {
     @PutMapping
     public ShoppingCartDto addProductToShoppingCart(
             @RequestParam String username,
-            @RequestBody Map<UUID, Integer> products
+            @Valid @RequestBody Map<UUID, Integer> products
     ) {
         log.info("PUT /api/v1/shopping-cart?username={}, products={}", username, products);
         return shoppingCartService.addProductToShoppingCart(username, products);
@@ -39,6 +41,7 @@ public class ShoppingCartController implements ShoppingCartClient {
 
     @Override
     @DeleteMapping
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deactivateCurrentShoppingCart(@RequestParam String username) {
         log.info("DELETE /api/v1/shopping-cart?username={}", username);
         shoppingCartService.deactivateCurrentShoppingCart(username);
@@ -48,7 +51,7 @@ public class ShoppingCartController implements ShoppingCartClient {
     @PostMapping("/remove")
     public ShoppingCartDto removeFromShoppingCart(
             @RequestParam String username,
-            @RequestBody List<UUID> productIds
+            @Valid @RequestBody List<UUID> productIds
     ) {
         log.info("POST /api/v1/shopping-cart/remove?username={}, productIds={}",
                 username, productIds);
@@ -59,7 +62,7 @@ public class ShoppingCartController implements ShoppingCartClient {
     @PostMapping("/change-quantity")
     public ShoppingCartDto changeProductQuantity(
             @RequestParam String username,
-            @RequestBody ChangeProductQuantityRequest request
+            @Valid @RequestBody ChangeProductQuantityRequest request
     ) {
         log.info("POST /api/v1/shopping-cart/change-quantity?username={}, request={}",
                 username, request);
