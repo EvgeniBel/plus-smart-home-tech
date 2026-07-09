@@ -1,16 +1,15 @@
-spring:
+server:
+  port: 0
+
+grpc:
   server:
-    port: 59090
+    port: 59091
 
-  grpc:
-    server:
-      port: 59091
-
+spring:
   application:
     name: collector
   kafka:
     bootstrap-servers: localhost:9092
-
 
 kafka:
   topics:
