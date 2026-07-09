@@ -25,7 +25,7 @@ public class WarehouseProduct {
     @Id
     UUID productId;
 
-    @Column(nullable = false)
+    @Column
     String name;
 
     @Column(length = 1000)
@@ -43,7 +43,7 @@ public class WarehouseProduct {
     @Column(nullable = false)
     Double depth;
 
-    @Column(nullable = false)
+    @Column
     boolean fragile;
 
     @Column(nullable = false)

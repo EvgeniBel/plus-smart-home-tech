@@ -39,4 +39,6 @@ public class ProductDto {
     @NotNull(message = "price must not be null")
     @Min(value = 1, message = "price must be greater than 0")
     Double price;
+
+    Double rating;
 }

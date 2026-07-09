@@ -1,6 +1,5 @@
 package ru.yandex.practicum.controller;
 
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -33,9 +32,15 @@ public class ShoppingCartController implements ShoppingCartClient {
     @PutMapping
     public ShoppingCartDto addProductToShoppingCart(
             @RequestParam String username,
-            @RequestParam Map<UUID, Integer> products
+            @RequestBody(required = false) Map<UUID, Long> products
     ) {
         log.info("PUT /api/v1/shopping-cart?username={}, products={}", username, products);
+
+        if (products == null || products.isEmpty()) {
+            log.warn("Тело запроса пустое, возвращаем текущую корзину для {}", username);
+            return shoppingCartService.getShoppingCart(username);
+        }
+
         return shoppingCartService.addProductToShoppingCart(username, products);
     }
 
@@ -51,10 +56,16 @@ public class ShoppingCartController implements ShoppingCartClient {
     @PostMapping("/remove")
     public ShoppingCartDto removeFromShoppingCart(
             @RequestParam String username,
-            @Valid @RequestBody List<UUID> productIds
+            @RequestBody(required = false) List<UUID> productIds
     ) {
         log.info("POST /api/v1/shopping-cart/remove?username={}, productIds={}",
                 username, productIds);
+
+        if (productIds == null || productIds.isEmpty()) {
+            log.warn("Список товаров для удаления пуст, возвращаем текущую корзину");
+            return shoppingCartService.getShoppingCart(username);
+        }
+
         return shoppingCartService.removeFromShoppingCart(username, productIds);
     }
 
@@ -62,10 +73,16 @@ public class ShoppingCartController implements ShoppingCartClient {
     @PostMapping("/change-quantity")
     public ShoppingCartDto changeProductQuantity(
             @RequestParam String username,
-            @Valid @RequestBody ChangeProductQuantityRequest request
+            @RequestBody(required = false) ChangeProductQuantityRequest request
     ) {
         log.info("POST /api/v1/shopping-cart/change-quantity?username={}, request={}",
                 username, request);
+
+        if (request == null || request.getProductId() == null) {
+            log.warn("Тело запроса пустое или не содержит productId, возвращаем текущую корзину");
+            return shoppingCartService.getShoppingCart(username);
+        }
+
         return shoppingCartService.changeProductQuantity(username, request);
     }
 }

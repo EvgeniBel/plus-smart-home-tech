@@ -17,8 +17,8 @@ public interface ShoppingCartClient {
 
     @PutMapping("/api/v1/shopping-cart")
     ShoppingCartDto addProductToShoppingCart(
-            @RequestParam("username") String username,
-            @RequestBody Map<UUID, Integer> products
+            @RequestParam String username,
+            @RequestBody(required = false) Map<UUID, Long> products
     );
 
     @DeleteMapping("/api/v1/shopping-cart")
@@ -27,12 +27,12 @@ public interface ShoppingCartClient {
     @PostMapping("/api/v1/shopping-cart/remove")
     ShoppingCartDto removeFromShoppingCart(
             @RequestParam("username") String username,
-            @RequestBody List<UUID> productIds
+            @RequestBody(required = false) List<UUID> productIds
     );
 
     @PostMapping("/api/v1/shopping-cart/change-quantity")
     ShoppingCartDto changeProductQuantity(
             @RequestParam("username") String username,
-            @RequestBody ChangeProductQuantityRequest request
+            @RequestBody(required = false) ChangeProductQuantityRequest request
     );
 }

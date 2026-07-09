@@ -64,27 +64,11 @@ public class ProductService {
      * Получение товара по ID
      */
     public ProductDto getProduct(UUID productId) {
-        log.info("Запрос товара по ID: {}", productId);
-
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> {
-                    log.error("Товар не найден по ID: {}", productId);
-                    return new ProductNotFoundException(
-                            "Товар не найден с ID: " + productId
-                    );
-                });
-
-        if (product.getProductState() == ProductState.DEACTIVATE) {
-            log.warn("Товар {} деактивирован", productId);
-            throw new ProductNotFoundException(
-                    "Товар деактивирован: " + productId
-            );
-        }
-
-        log.info("Товар успешно найден: {} (ID: {})",
-                product.getProductName(), productId);
-        return productMapper.toDto(product);
+                .orElseThrow(() -> new ProductNotFoundException("Товар не найден с ID: " + productId));
+        return productMapper.toDto(product);  // ← просто вернуть товар
     }
+
 
     /**
      * PUT /api/v1/shopping-store
@@ -93,22 +77,21 @@ public class ProductService {
     @Transactional
     public ProductDto createNewProduct(ProductDto productDto) {
         log.info("Создание нового товара: {}", productDto.getProductName());
-        log.debug("Данные товара: наименование='{}', цена={}, категория={}",
-                productDto.getProductName(),
-                productDto.getPrice(),
-                productDto.getProductCategory());
 
         Product product = productMapper.toEntityForCreate(productDto);
-        product.setProductState(ProductState.ACTIVE);
+
+        product.setProductState(
+                productDto.getProductState() != null
+                        ? productDto.getProductState()
+                        : ProductState.ACTIVE
+        );
 
         if (product.getQuantityState() == null) {
-            log.debug("Статус количества не указан, устанавливаем ENDED");
             product.setQuantityState(QuantityState.ENDED);
         }
 
         Product saved = productRepository.save(product);
-        log.info("Товар успешно создан с ID: {}, наименование: {}",
-                saved.getProductId(), saved.getProductName());
+        log.info("Товар успешно создан с ID: {}", saved.getProductId());
 
         return productMapper.toDto(saved);
     }

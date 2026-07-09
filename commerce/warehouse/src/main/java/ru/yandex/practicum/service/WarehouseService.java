@@ -37,12 +37,6 @@ public class WarehouseService {
         }
         log.info("Добавление нового товара на склад: {}", request.getProductId());
 
-        if (request.getName() == null || request.getName().trim().isEmpty()) {
-            throw new IllegalArgumentException("Product name cannot be empty");
-        }
-        log.info("Добавление нового товара на склад: {}", request.getProductId());
-
-
         if (warehouseProductRepository.existsById(request.getProductId())) {
             log.warn("Товар уже существует на складе: {}", request.getProductId());
             throw new SpecifiedProductAlreadyInWarehouseException(
