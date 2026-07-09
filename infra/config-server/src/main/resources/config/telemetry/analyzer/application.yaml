@@ -1,6 +1,6 @@
 spring:
   server:
-    port: 59093
+    port: 0
 
   application:
     name: analyzer

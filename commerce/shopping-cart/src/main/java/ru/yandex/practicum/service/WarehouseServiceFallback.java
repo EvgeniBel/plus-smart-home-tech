@@ -1,11 +1,10 @@
 package ru.yandex.practicum.service;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 import ru.yandex.practicum.client.WarehouseClient;
 import ru.yandex.practicum.dto.*;
 
-@Component
+
 @Slf4j
 public class WarehouseServiceFallback implements WarehouseClient {
 

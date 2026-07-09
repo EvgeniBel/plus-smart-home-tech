@@ -23,6 +23,4 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
             ProductState state,
             Pageable pageable
     );
-
-    boolean existsByProductIdAndProductState(UUID productId, ProductState state);
 }
