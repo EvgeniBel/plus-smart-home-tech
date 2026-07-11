@@ -2,6 +2,7 @@ package ru.yandex.practicum.client;
 
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.constants.ApiConstants;
 import ru.yandex.practicum.dto.ChangeProductQuantityRequest;
 import ru.yandex.practicum.dto.ShoppingCartDto;
 
@@ -12,27 +13,31 @@ import java.util.UUID;
 @FeignClient(name = "shopping-cart")
 public interface ShoppingCartClient {
 
-    @GetMapping("/api/v1/shopping-cart")
-    ShoppingCartDto getShoppingCart(@RequestParam("username") String username);
+    @GetMapping(ApiConstants.BASE_PATH_SHOPPING_CART)
+    ShoppingCartDto getShoppingCart(
+            @RequestParam(ApiConstants.PARAM_USERNAME) String username
+    );
 
-    @PutMapping("/api/v1/shopping-cart")
+    @PutMapping(ApiConstants.BASE_PATH_SHOPPING_CART)
     ShoppingCartDto addProductToShoppingCart(
-            @RequestParam String username,
+            @RequestParam(ApiConstants.PARAM_USERNAME) String username,
             @RequestBody(required = false) Map<UUID, Long> products
     );
 
-    @DeleteMapping("/api/v1/shopping-cart")
-    void deactivateCurrentShoppingCart(@RequestParam("username") String username);
+    @DeleteMapping(ApiConstants.BASE_PATH_SHOPPING_CART)
+    void deactivateCurrentShoppingCart(
+            @RequestParam(ApiConstants.PARAM_USERNAME) String username
+    );
 
-    @PostMapping("/api/v1/shopping-cart/remove")
+    @PostMapping(ApiConstants.CART_REMOVE)
     ShoppingCartDto removeFromShoppingCart(
-            @RequestParam("username") String username,
+            @RequestParam(ApiConstants.PARAM_USERNAME) String username,
             @RequestBody(required = false) List<UUID> productIds
     );
 
-    @PostMapping("/api/v1/shopping-cart/change-quantity")
+    @PostMapping(ApiConstants.CART_CHANGE_QUANTITY)
     ShoppingCartDto changeProductQuantity(
-            @RequestParam("username") String username,
+            @RequestParam(ApiConstants.PARAM_USERNAME) String username,
             @RequestBody(required = false) ChangeProductQuantityRequest request
     );
 }
