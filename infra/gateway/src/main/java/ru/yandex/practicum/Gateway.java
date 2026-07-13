@@ -3,18 +3,17 @@ package ru.yandex.practicum;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
-import org.springframework.cloud.openfeign.EnableFeignClients;
 
 @SpringBootApplication
 @EnableDiscoveryClient
-@EnableFeignClients
+@EnableConfigurationProperties
 @Slf4j
-public class ShoppingStoreApplication {
-
+public class Gateway {
     public static void main(String[] args) {
-
-        SpringApplication.run(ShoppingStoreApplication.class, args);
-        log.info("ShoppingStore успешно запущен");
+        log.info("Запуск Gateway сервера");
+        SpringApplication.run(Gateway.class, args);
+        log.info("Gateway успешно запущен");
     }
 }
