@@ -1,5 +1,7 @@
 package ru.yandex.practicum.config.kafka;
 
+import lombok.AccessLevel;
+import lombok.experimental.FieldDefaults;
 import org.apache.avro.specific.SpecificRecordBase;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
@@ -14,10 +16,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Configuration
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class KafkaConfig {
 
     @Value("${spring.kafka.bootstrap-servers:localhost:9092}")
-    private String bootstrapServers;
+    String bootstrapServers;
 
     @Bean
     public ProducerFactory<String, SpecificRecordBase> producerFactory() {

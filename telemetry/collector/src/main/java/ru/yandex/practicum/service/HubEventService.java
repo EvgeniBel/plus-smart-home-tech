@@ -1,48 +1,47 @@
 package ru.yandex.practicum.service;
 
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.config.kafka.KafkaEventProducer;
-import ru.yandex.practicum.dto.hub.HubEventDto;
-import ru.yandex.practicum.dto.hub.UnknownHubEventDto;
+import ru.yandex.practicum.grpc.telemetry.event.HubEventProto;
+import ru.yandex.practicum.kafka.telemetry.event.HubEventAvro;
 import ru.yandex.practicum.mapper.HubEventMapper;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class HubEventService {
 
-    private final KafkaEventProducer kafkaProducer;
-    private final HubEventMapper mapper;
+    final KafkaEventProducer kafkaProducer;
+    final HubEventMapper protoMapper;
 
     @Value("${kafka.topics.hub-events:telemetry.hubs.v1}")
-    private String hubEventsTopic;
+    String hubEventsTopic;
 
-    public void sendHubEvent(HubEventDto event) {
-        if (event instanceof UnknownHubEventDto) {
-            log.warn("Получено неизвестное событие хаба: hubId={}, тип неизвестен", event.getHubId());
-            return;
-        }
-
-        log.info("Обработка события хаба: тип={}, hubId={}", event.getType(), event.getHubId());
+    public void sendHubEventFromProto(HubEventProto event) {
+        log.info("Обработка события хаба из Proto: hubId={}, type={}",
+                event.getHubId(), event.getPayloadCase());
 
         try {
-            var avroEvent = mapper.toAvro(event);
+            HubEventAvro avroEvent = protoMapper.toAvro(event);
 
-            // Используем hubId как ключ для партиционирования
+            if (avroEvent == null) {
+                log.error("Ошибка конвертации события хаба в Avro: hubId={}", event.getHubId());
+                throw new RuntimeException("Ошибка конвертации события хаба");
+            }
+
             String key = avroEvent.getHubId();
-
-            // Отправляем с ключом
             kafkaProducer.send(hubEventsTopic, key, avroEvent);
 
-            log.info("Событие хаба успешно отправлено в Kafka: тип={}, hubId={}, ключ={}",
-                    event.getType(), event.getHubId(), key);
+            log.info("Событие хаба успешно отправлено в Kafka: hubId={}", event.getHubId());
         } catch (Exception e) {
-            log.error("Ошибка при обработке события хаба: тип={}, hubId={}",
-                    event.getType(), event.getHubId(), e);
-            throw new RuntimeException(String.format("Не удалось обработать событие хаба: %s",event.getType()), e);
+            log.error("Ошибка при обработке события хаба: hubId={}", event.getHubId(), e);
+            throw new RuntimeException(String.format("Не удалось обработать событие хаба: %s", event.getHubId()), e);
         }
     }
 }
