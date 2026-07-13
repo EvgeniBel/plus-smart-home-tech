@@ -2,7 +2,7 @@ package ru.yandex.practicum.constants;
 
 public final class ApiConstants {
     // Базовые пути для сервисов
-    public static final String BASE_PATH_SHOPPING_CART ="/api/v1/shopping-cart";
+    public static final String BASE_PATH_SHOPPING_CART = "/api/v1/shopping-cart";
     public static final String BASE_PATH_SHOPPING_STORE = "/api/v1/shopping-store";
     public static final String BASE_PATH_WAREHOUSE = "/api/v1/warehouse";
 
