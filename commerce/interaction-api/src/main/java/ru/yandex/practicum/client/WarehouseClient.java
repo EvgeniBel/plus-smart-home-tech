@@ -2,12 +2,11 @@ package ru.yandex.practicum.client;
 
 import jakarta.validation.Valid;
 import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.constants.ApiConstants;
 import ru.yandex.practicum.dto.*;
+
+import java.util.UUID;
 
 @FeignClient(name = "warehouse")
 public interface WarehouseClient {
@@ -23,4 +22,7 @@ public interface WarehouseClient {
 
     @GetMapping(ApiConstants.WAREHOUSE_ADDRESS)
     AddressDto getWarehouseAddress();
+
+    @PostMapping(ApiConstants.WAREHOUSE_REGISTER_DELIVERY)
+    void registerDelivery(@PathVariable UUID deliveryId);
 }

@@ -19,10 +19,16 @@ public final class ApiConstants {
     public static final String STORE_REMOVE_PRODUCT = BASE_PATH_SHOPPING_STORE + "/removeProductFromStore";
     public static final String STORE_QUANTITY_STATE = BASE_PATH_SHOPPING_STORE + "/quantityState";
     public static final String STORE_PRODUCT_BY_ID = BASE_PATH_SHOPPING_STORE + "/{productId}";
+
+    // Пути для Order
+    public static final String WAREHOUSE_REGISTER_DELIVERY = BASE_PATH_WAREHOUSE +"/delivery/{deliveryId}";
+
     // Параметры запросов
     public static final String PARAM_USERNAME = "username";
     public static final String PARAM_CATEGORY = "category";
     public static final String PARAM_PRODUCT_ID = "productId";
+
+
 
     private ApiConstants() {
         // Приватный конструктор для предотвращения создания экземпляров

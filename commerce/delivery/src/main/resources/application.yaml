@@ -1,6 +1,6 @@
 spring:
   application:
-    name: payment
+    name: delivery
   config:
     import: "configserver:"
   cloud:
@@ -22,7 +22,6 @@ eureka:
     instance-id: "${spring.application.name}:${random.value}"
     leaseRenewalIntervalInSeconds: 30
     leaseExpirationDurationInSeconds: 90
-
 
 logging:
   level:
