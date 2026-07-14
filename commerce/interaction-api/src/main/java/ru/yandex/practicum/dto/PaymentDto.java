@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
+import java.util.UUID;
+
 import static lombok.AccessLevel.PRIVATE;
 
 @Data
@@ -13,10 +15,9 @@ import static lombok.AccessLevel.PRIVATE;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = PRIVATE)
-public class AddressDto {
-    String country;
-    String city;
-    String street;
-    String house;
-    String flat;
+public class PaymentDto {
+    UUID paymentId;
+    Double totalPayment;
+    Double deliveryTotal;
+    Double feeTotal;
 }
