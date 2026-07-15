@@ -4,6 +4,9 @@ import lombok.extern.slf4j.Slf4j;
 import ru.yandex.practicum.client.WarehouseClient;
 import ru.yandex.practicum.dto.*;
 
+import java.util.Map;
+import java.util.UUID;
+
 
 @Slf4j
 public class WarehouseServiceFallback implements WarehouseClient {
@@ -45,5 +48,26 @@ public class WarehouseServiceFallback implements WarehouseClient {
                 .house("Неизвестно")
                 .flat("Неизвестно")
                 .build();
+    }
+
+    @Override
+    public BookedProductsDto assemblyProductsForOrder(AssemblyProductsForOrderRequest request) {
+        log.warn("FALLBACK: Метод assemblyProductsForOrder вызван, но сервис склада недоступен. Заказ: {}",
+                request != null ? request.getOrderId() : "null");
+        throw new RuntimeException("Сервис склада временно недоступен");
+    }
+
+    @Override
+    public void shippedToDelivery(ShippedToDeliveryRequest request) {
+        log.warn("FALLBACK: Метод shippedToDelivery вызван, но сервис склада недоступен. Заказ: {}",
+                request != null ? request.getOrderId() : "null");
+        throw new RuntimeException("Сервис склада временно недоступен");
+    }
+
+    @Override
+    public void acceptReturn(Map<UUID, Long> products) {
+        log.warn("FALLBACK: Метод acceptReturn вызван, но сервис склада недоступен. Количество товаров: {}",
+                products != null ? products.size() : 0);
+        throw new RuntimeException("Сервис склада временно недоступен");
     }
 }

@@ -159,4 +159,136 @@ public class WarehouseService {
         log.info("Запрос адреса склада: {}", address);
         return address;
     }
+
+    @Transactional
+    public BookedProductsDto assemblyProductsForOrder(AssemblyProductsForOrderRequest request) {
+        log.info("Сборка товаров для заказа: {}", request.getOrderId());
+
+        if (request.getProducts() == null || request.getProducts().isEmpty()) {
+            throw new IllegalArgumentException("Список товаров пуст");
+        }
+
+        List<UUID> unavailableProducts = new ArrayList<>();
+        double totalWeight = 0.0;
+        double totalVolume = 0.0;
+        boolean hasFragile = false;
+
+        for (Map.Entry<UUID, Long> entry : request.getProducts().entrySet()) {
+            UUID productId = entry.getKey();
+            Long requestedQuantity = entry.getValue();
+
+            if (requestedQuantity == null || requestedQuantity <= 0) {
+                log.warn("Некорректное количество для товара {}", productId);
+                continue;
+            }
+
+            WarehouseProduct product = warehouseProductRepository.findByProductId(productId)
+                    .orElseThrow(() -> {
+                        log.error("Товар не найден на складе: {}", productId);
+                        return new NoSpecifiedProductInWarehouseException(
+                                "Товар не найден на складе: " + productId
+                        );
+                    });
+
+            if (product.getQuantity() < requestedQuantity) {
+                log.warn("Недостаточное количество товара {}. На складе: {}, Запрошено: {}",
+                        productId, product.getQuantity(), requestedQuantity);
+                unavailableProducts.add(productId);
+                continue;
+            }
+
+            // Уменьшаем остаток на складе
+            int newQuantity = product.getQuantity() - requestedQuantity.intValue();
+            product.setQuantity(newQuantity);
+            warehouseProductRepository.save(product);
+
+            totalWeight += product.getWeight() * requestedQuantity;
+            double volume = product.getWidth() * product.getHeight() * product.getDepth();
+            totalVolume += volume * requestedQuantity;
+
+            if (product.isFragile()) {
+                hasFragile = true;
+            }
+        }
+
+        if (!unavailableProducts.isEmpty()) {
+            log.warn("Обнаружены товары с недостаточным количеством: {}", unavailableProducts);
+            throw new ProductInShoppingCartLowQuantityInWarehouse(
+                    "Недостаточное количество товаров на складе",
+                    unavailableProducts
+            );
+        }
+
+        log.info("Сборка заказа {} завершена. Вес: {} кг, Объём: {} м³, Хрупкие: {}",
+                request.getOrderId(), totalWeight, totalVolume, hasFragile);
+
+        return BookedProductsDto.builder()
+                .deliveryWeight(totalWeight)
+                .deliveryVolume(totalVolume)
+                .fragile(hasFragile)
+                .build();
+    }
+
+    /**
+     * Передать товары в доставку
+     * POST /api/v1/warehouse/shipped
+     */
+    @Transactional
+    public void shippedToDelivery(ShippedToDeliveryRequest request) {
+        log.info("Передача товаров в доставку. Заказ: {}, Доставка: {}",
+                request.getOrderId(), request.getDeliveryId());
+
+        if (request.getOrderId() == null) {
+            throw new IllegalArgumentException("ID заказа не может быть null");
+        }
+        if (request.getDeliveryId() == null) {
+            throw new IllegalArgumentException("ID доставки не может быть null");
+        }
+
+        // Здесь можно сохранить связь заказа с доставкой в отдельной сущности
+        // Например, в OrderDelivery или обновить заказ
+        log.info("Товары переданы в доставку для заказа {}", request.getOrderId());
+    }
+
+    /**
+     * Вернуть товары на склад
+     * POST /api/v1/warehouse/return
+     */
+    @Transactional
+    public void acceptReturn(Map<UUID, Long> products) {
+        log.info("Приём возврата товаров на склад: {}", products);
+
+        if (products == null || products.isEmpty()) {
+            log.warn("Список товаров для возврата пуст");
+            return;
+        }
+
+        for (Map.Entry<UUID, Long> entry : products.entrySet()) {
+            UUID productId = entry.getKey();
+            Long quantity = entry.getValue();
+
+            if (quantity == null || quantity <= 0) {
+                log.warn("Некорректное количество для возврата товара {}", productId);
+                continue;
+            }
+
+            WarehouseProduct product = warehouseProductRepository.findByProductId(productId)
+                    .orElseThrow(() -> {
+                        log.error("Товар не найден на складе: {}", productId);
+                        return new NoSpecifiedProductInWarehouseException(
+                                "Товар не найден на складе: " + productId
+                        );
+                    });
+
+            int oldQuantity = product.getQuantity();
+            int newQuantity = oldQuantity + quantity.intValue();
+            product.setQuantity(newQuantity);
+            warehouseProductRepository.save(product);
+
+            log.info("Количество товара {} увеличено: {} → {}",
+                    productId, oldQuantity, newQuantity);
+        }
+
+        log.info("Возврат товаров успешно завершён");
+    }
 }

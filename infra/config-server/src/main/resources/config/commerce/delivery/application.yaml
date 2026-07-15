@@ -1,46 +1,23 @@
 server:
   port: 0
 
+logging:
+  level:
+    ru.yandex.practicum: DEBUG
+
 spring:
-  application:
-    name: delivery
-  config:
-    import: "optional:configserver:"
-  cloud:
-    config:
-      discovery:
-        enabled: true
-        service-id: config-server
-      fail-fast: true
-      retry:
-        max-attempts: 6
-        initial-interval: 1000
-        multiplier: 1.1
   datasource:
-    url: jdbc:postgresql://localhost:5432/delivery
+    url: jdbc:postgresql://localhost:5432/shopping_cart
     username: postgres
     password: password
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: create
-    show-sql: true
+      ddl-auto: update
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
-
-eureka:
-  client:
-    serviceUrl:
-      defaultZone: http://localhost:8761/eureka/
-  instance:
-    preferIpAddress: true
-    instance-id: "${spring.application.name}:${random.value}"
-    leaseRenewalIntervalInSeconds: 30
-    leaseExpirationDurationInSeconds: 90
-
-logging:
-  level:
-    ru.yandex.practicum: DEBUG
-    org.springframework.cloud.openfeign: DEBUG
+        show_sql: false
+        use_sql_comments: true
+    open-in-view: false

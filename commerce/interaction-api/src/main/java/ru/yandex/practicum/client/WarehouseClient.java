@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.constants.ApiConstants;
 import ru.yandex.practicum.dto.*;
 
+import java.util.Map;
 import java.util.UUID;
 
 @FeignClient(name = "warehouse")
@@ -23,6 +24,25 @@ public interface WarehouseClient {
     @GetMapping(ApiConstants.WAREHOUSE_ADDRESS)
     AddressDto getWarehouseAddress();
 
-    @PostMapping(ApiConstants.WAREHOUSE_REGISTER_DELIVERY)
-    void registerDelivery(@PathVariable UUID deliveryId);
+
+    /**
+     * Собрать товары для заказа
+     * POST /api/v1/warehouse/assembly
+     */
+    @PostMapping(ApiConstants.WAREHOUSE_ASSEMBLY)
+    BookedProductsDto assemblyProductsForOrder(@Valid @RequestBody AssemblyProductsForOrderRequest request);
+
+    /**
+     * Передать товары в доставку
+     * POST /api/v1/warehouse/shipped
+     */
+    @PostMapping(ApiConstants.WAREHOUSE_SHIPPED)
+    void shippedToDelivery(@Valid @RequestBody ShippedToDeliveryRequest request);
+
+    /**
+     * Вернуть товары на склад
+     * POST /api/v1/warehouse/return
+     */
+    @PostMapping(ApiConstants.WAREHOUSE_RETURN)
+    void acceptReturn(@RequestBody Map<UUID, Long> products);
 }

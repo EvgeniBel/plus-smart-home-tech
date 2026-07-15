@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import ru.yandex.practicum.enums.OrderState;
 
 import java.util.Map;
 import java.util.UUID;

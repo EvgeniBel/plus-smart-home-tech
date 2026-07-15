@@ -9,6 +9,7 @@ import ru.yandex.practicum.client.WarehouseClient;
 import ru.yandex.practicum.dto.AddressDto;
 import ru.yandex.practicum.dto.DeliveryDto;
 import ru.yandex.practicum.dto.OrderDto;
+import ru.yandex.practicum.dto.ShippedToDeliveryRequest;
 import ru.yandex.practicum.enums.DeliveryState;
 import ru.yandex.practicum.enums.OrderState;
 import ru.yandex.practicum.exception.NoDeliveryFoundException;
@@ -109,8 +110,11 @@ public class DeliveryService {
         // Обновляем статус заказа
         orderClient.updateOrderState(orderId, OrderState.ASSEMBLED);
 
-        // Регистрируем доставку на складе
-        warehouseClient.registerDelivery(delivery.getDeliveryId());
+        ShippedToDeliveryRequest request = ShippedToDeliveryRequest.builder()
+                .orderId(orderId)
+                .deliveryId(delivery.getDeliveryId())
+                .build();
+        warehouseClient.shippedToDelivery(request);
 
         log.info("Доставка {} переведена в статус IN_PROGRESS", delivery.getDeliveryId());
     }

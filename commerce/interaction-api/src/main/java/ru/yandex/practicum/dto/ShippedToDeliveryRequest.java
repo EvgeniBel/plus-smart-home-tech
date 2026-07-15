@@ -7,7 +7,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
-import java.util.Map;
 import java.util.UUID;
 
 import static lombok.AccessLevel.PRIVATE;
@@ -17,10 +16,10 @@ import static lombok.AccessLevel.PRIVATE;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = PRIVATE)
-public class AssemblyProductsForOrderRequest {
-    @NotNull
-    Map<UUID, Long> products;
-
+public class ShippedToDeliveryRequest {
     @NotNull
     UUID orderId;
+
+    @NotNull
+    UUID deliveryId;
 }

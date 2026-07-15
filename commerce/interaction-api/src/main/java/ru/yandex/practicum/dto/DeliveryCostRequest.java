@@ -1,14 +1,12 @@
 package ru.yandex.practicum.dto;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
-
-import java.util.Map;
-import java.util.UUID;
 
 import static lombok.AccessLevel.PRIVATE;
 
@@ -17,10 +15,16 @@ import static lombok.AccessLevel.PRIVATE;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = PRIVATE)
-public class AssemblyProductsForOrderRequest {
+public class DeliveryCostRequest {
     @NotNull
-    Map<UUID, Long> products;
+    @Valid
+    OrderDto order;
 
     @NotNull
-    UUID orderId;
+    @Valid
+    AddressDto fromAddress;
+
+    @NotNull
+    @Valid
+    AddressDto toAddress;
 }

@@ -4,9 +4,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.dto.AddressDto;
+import ru.yandex.practicum.dto.DeliveryCostRequest;
 import ru.yandex.practicum.dto.DeliveryDto;
-import ru.yandex.practicum.dto.OrderDto;
 import ru.yandex.practicum.service.DeliveryService;
 
 import java.util.UUID;
@@ -34,13 +33,14 @@ public class DeliveryController {
      * POST /api/v1/delivery/cost
      */
     @PostMapping("/cost")
-    public double calculateDeliveryCost(
-            @Valid @RequestBody OrderDto order,
-            @RequestParam AddressDto fromAddress,
-            @RequestParam AddressDto toAddress
-    ) {
-        log.info("POST /api/v1/delivery/cost - orderId: {}", order.getOrderId());
-        return deliveryService.calculateDeliveryCost(order, fromAddress, toAddress);
+    public double calculateDeliveryCost(@Valid @RequestBody DeliveryCostRequest request) {
+        log.info("POST /api/v1/delivery/cost - orderId: {}",
+                request.getOrder().getOrderId());
+        return deliveryService.calculateDeliveryCost(
+                request.getOrder(),
+                request.getFromAddress(),
+                request.getToAddress()
+        );
     }
 
     /**

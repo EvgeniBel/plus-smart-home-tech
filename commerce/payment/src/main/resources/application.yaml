@@ -23,7 +23,6 @@ eureka:
     leaseRenewalIntervalInSeconds: 30
     leaseExpirationDurationInSeconds: 90
 
-
 logging:
   level:
     ru.yandex.practicum: DEBUG
