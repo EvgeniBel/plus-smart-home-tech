@@ -24,12 +24,11 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class DeliveryService {
 
+    private static final double BASE_COST = 5.0;
     private final DeliveryRepository deliveryRepository;
     private final DeliveryMapper deliveryMapper;
     private final OrderClient orderClient;
     private final WarehouseClient warehouseClient;
-
-    private static final double BASE_COST = 5.0;
 
     /**
      * Создать новую доставку

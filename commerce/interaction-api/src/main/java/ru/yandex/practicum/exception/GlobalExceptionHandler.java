@@ -21,11 +21,55 @@ public class GlobalExceptionHandler {
                 .body(Map.of("error", ex.getMessage()));
     }
 
+    @ExceptionHandler(NoDeliveryFoundException.class)
+    public ResponseEntity<Map<String, String>> handleNoDeliveryFound(NoDeliveryFoundException ex) {
+        log.error("Доставка не найдена: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(NoProductsInShoppingCartException.class)
+    public ResponseEntity<Map<String, String>> handleNoProductsInShoppingCart(NoProductsInShoppingCartException ex) {
+        log.error("В корзине нет товаров: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", ex.getMessage()));
+    }
+
     @ExceptionHandler(NoSpecifiedProductInWarehouseException.class)
     public ResponseEntity<Map<String, String>> handleNoSpecifiedProductInWarehouse(NoSpecifiedProductInWarehouseException ex) {
         log.error("Товар не найден на складе: {}", ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(SpecifiedProductAlreadyInWarehouseException.class)
+    public ResponseEntity<Map<String, String>> handleSpecifiedProductAlreadyInWarehouse(SpecifiedProductAlreadyInWarehouseException ex) {
+        log.error("Товар уже существует на складе: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(ProductInShoppingCartLowQuantityInWarehouse.class)
+    public ResponseEntity<Map<String, Object>> handleProductInShoppingCartLowQuantityInWarehouse(
+            ProductInShoppingCartLowQuantityInWarehouse ex) {
+        log.error("Недостаточно товаров на складе: {}", ex.getMessage());
+        Map<String, Object> response = new HashMap<>();
+        response.put("error", ex.getMessage());
+        response.put("unavailableProducts", ex.getUnavailableProducts());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(response);
+    }
+
+    @ExceptionHandler(ProductNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleProductNotFound(ProductNotFoundException ex) {
+        log.error("Товар не найден: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
                 .body(Map.of("error", ex.getMessage()));
     }
 
@@ -35,14 +79,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
                 .body(Map.of("error", ex.getMessage()));
-    }
-
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, String>> handleGenericException(Exception ex) {
-        log.error("Внутренняя ошибка сервера: {}", ex.getMessage(), ex);
-        return ResponseEntity
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Внутренняя ошибка сервера: " + ex.getMessage()));
     }
 
     @ExceptionHandler(NotEnoughInfoInOrderToCalculateException.class)
@@ -62,5 +98,13 @@ public class GlobalExceptionHandler {
         );
         log.error("Ошибки валидации: {}", errors);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, String>> handleGenericException(Exception ex) {
+        log.error("Внутренняя ошибка сервера: {}", ex.getMessage(), ex);
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Внутренняя ошибка сервера: " + ex.getMessage()));
     }
 }

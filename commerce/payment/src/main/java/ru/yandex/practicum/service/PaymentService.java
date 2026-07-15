@@ -9,8 +9,8 @@ import ru.yandex.practicum.dto.OrderDto;
 import ru.yandex.practicum.dto.PaymentDto;
 import ru.yandex.practicum.dto.ProductDto;
 import ru.yandex.practicum.enums.PaymentStatus;
-import ru.yandex.practicum.exception.NotEnoughInfoInOrderToCalculateException;
 import ru.yandex.practicum.exception.NoOrderFoundException;
+import ru.yandex.practicum.exception.NotEnoughInfoInOrderToCalculateException;
 import ru.yandex.practicum.mapper.PaymentMapper;
 import ru.yandex.practicum.model.Payment;
 import ru.yandex.practicum.repository.PaymentRepository;
@@ -23,12 +23,11 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class PaymentService {
 
+    private static final double VAT_RATE = 0.10;
+    private static final double DELIVERY_PRICE = 50.0;
     private final PaymentRepository paymentRepository;
     private final PaymentMapper paymentMapper;
     private final ShoppingStoreClient shoppingStoreClient;
-
-    private static final double VAT_RATE = 0.10;
-    private static final double DELIVERY_PRICE = 50.0;
 
     public double calculateProductCost(OrderDto order) {
         log.info("Расчёт стоимости товаров для заказа: {}", order.getOrderId());
