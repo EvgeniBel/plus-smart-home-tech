@@ -62,7 +62,7 @@ public class OrderService {
     @Transactional(readOnly = true)
     public OrderDto getOrder(UUID orderId) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new NoOrderFoundException("Заказ не найден: " + orderId));
+                .orElseThrow(() -> new NoOrderFoundException(String.format("Заказ не найден: %s", orderId)));
         return orderMapper.toDto(order);
     }
 
@@ -161,6 +161,6 @@ public class OrderService {
 
     private Order getOrderEntity(UUID orderId) {
         return orderRepository.findById(orderId)
-                .orElseThrow(() -> new NoOrderFoundException("Заказ не найден: " + orderId));
+                .orElseThrow(() -> new NoOrderFoundException(String.format("Заказ не найден: %s", orderId)));
     }
 }

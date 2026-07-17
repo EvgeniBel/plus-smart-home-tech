@@ -101,7 +101,7 @@ public class DeliveryService {
         log.info("Приём товаров в доставку для заказа: {}", orderId);
 
         Delivery delivery = deliveryRepository.findByOrderId(orderId)
-                .orElseThrow(() -> new NoDeliveryFoundException("Доставка не найдена для заказа: " + orderId));
+                .orElseThrow(() -> new NoDeliveryFoundException(String.format("Доставка не найдена для заказа: %s", orderId)));
 
         delivery.setDeliveryState(DeliveryState.IN_PROGRESS);
         deliveryRepository.save(delivery);
@@ -127,7 +127,7 @@ public class DeliveryService {
         log.info("Подтверждение успешной доставки для заказа: {}", orderId);
 
         Delivery delivery = deliveryRepository.findByOrderId(orderId)
-                .orElseThrow(() -> new NoDeliveryFoundException("Доставка не найдена для заказа: " + orderId));
+                .orElseThrow(() -> new NoDeliveryFoundException(String.format("Доставка не найдена для заказа: %s", orderId)));
 
         delivery.setDeliveryState(DeliveryState.DELIVERED);
         deliveryRepository.save(delivery);
@@ -147,7 +147,7 @@ public class DeliveryService {
         log.info("Отказ в доставке для заказа: {}", orderId);
 
         Delivery delivery = deliveryRepository.findByOrderId(orderId)
-                .orElseThrow(() -> new NoDeliveryFoundException("Доставка не найдена для заказа: " + orderId));
+                .orElseThrow(() -> new NoDeliveryFoundException(String.format("Доставка не найдена для заказа: %s", orderId)));
 
         delivery.setDeliveryState(DeliveryState.FAILED);
         deliveryRepository.save(delivery);

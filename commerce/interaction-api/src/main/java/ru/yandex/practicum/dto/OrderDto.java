@@ -1,5 +1,6 @@
 package ru.yandex.practicum.dto;
 
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,7 +25,7 @@ public class OrderDto {
 
     UUID shoppingCartId;
 
-    @NotNull
+    @NotEmpty
     Map<UUID, Long> products;
 
     UUID paymentId;

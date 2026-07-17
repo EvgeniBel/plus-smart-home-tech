@@ -47,9 +47,8 @@ public class PaymentService {
                         productId, productPrice, quantity, productPrice * quantity);
             } catch (Exception e) {
                 log.error("Ошибка при получении товара {}: {}", productId, e.getMessage());
-                throw new NotEnoughInfoInOrderToCalculateException(
-                        "Не удалось получить информацию о товаре: " + productId
-                );
+                throw new NotEnoughInfoInOrderToCalculateException
+                        (String.format("Не удалось получить информацию о товаре: %s", productId));
             }
         }
 
@@ -74,7 +73,7 @@ public class PaymentService {
 
         paymentRepository.findByOrderId(order.getOrderId())
                 .ifPresent(p -> {
-                    throw new IllegalArgumentException("Оплата для заказа уже существует: " + order.getOrderId());
+                    throw new IllegalArgumentException(String.format("Оплата для заказа уже существует: %s", order.getOrderId()));
                 });
 
         double productCost = calculateProductCost(order);
@@ -101,7 +100,7 @@ public class PaymentService {
         log.info("Обработка успешной оплаты: {}", paymentId);
 
         Payment payment = paymentRepository.findById(paymentId)
-                .orElseThrow(() -> new NoOrderFoundException("Платёж не найден: " + paymentId));
+                .orElseThrow(() -> new NoOrderFoundException(String.format("Платёж не найден: %s", paymentId)));
 
         payment.setStatus(PaymentStatus.SUCCESS);
         paymentRepository.save(payment);
@@ -114,7 +113,7 @@ public class PaymentService {
         log.info("Обработка отказа в оплате: {}", paymentId);
 
         Payment payment = paymentRepository.findById(paymentId)
-                .orElseThrow(() -> new NoOrderFoundException("Платёж не найден: " + paymentId));
+                .orElseThrow(() -> new NoOrderFoundException(String.format("Платёж не найден: %s", paymentId)));
 
         payment.setStatus(PaymentStatus.FAILED);
         paymentRepository.save(payment);

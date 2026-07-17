@@ -40,8 +40,7 @@ public class WarehouseService {
         if (warehouseProductRepository.existsById(request.getProductId())) {
             log.warn("Товар уже существует на складе: {}", request.getProductId());
             throw new SpecifiedProductAlreadyInWarehouseException(
-                    "Товар уже существует на складе: " + request.getProductId()
-            );
+                    String.format("Товар уже существует на складе: %s", request.getProductId()));
         }
 
         WarehouseProduct product = warehouseMapper.toEntity(request);
@@ -81,8 +80,7 @@ public class WarehouseService {
                     .orElseThrow(() -> {
                         log.error("Товар не найден на складе: {}", productId);
                         return new NoSpecifiedProductInWarehouseException(
-                                "Товар не найден на складе: " + productId
-                        );
+                                String.format("Товар не найден на складе: %s", productId));
                     });
 
             if (product.getQuantity() < requestedQuantity) {
@@ -138,8 +136,7 @@ public class WarehouseService {
                 .orElseThrow(() -> {
                     log.error("Товар не найден на складе: {}", request.getProductId());
                     return new NoSpecifiedProductInWarehouseException(
-                            "Товар не найден на складе: " + request.getProductId()
-                    );
+                            String.format("Товар не найден на складе: %s", request.getProductId()));
                 });
 
         int oldQuantity = product.getQuantity();
@@ -186,8 +183,7 @@ public class WarehouseService {
                     .orElseThrow(() -> {
                         log.error("Товар не найден на складе: {}", productId);
                         return new NoSpecifiedProductInWarehouseException(
-                                "Товар не найден на складе: " + productId
-                        );
+                                String.format("Товар не найден на складе: %s", productId));
                     });
 
             if (product.getQuantity() < requestedQuantity) {
@@ -276,8 +272,7 @@ public class WarehouseService {
                     .orElseThrow(() -> {
                         log.error("Товар не найден на складе: {}", productId);
                         return new NoSpecifiedProductInWarehouseException(
-                                "Товар не найден на складе: " + productId
-                        );
+                                String.format("Товар не найден на складе: %s", productId));
                     });
 
             int oldQuantity = product.getQuantity();

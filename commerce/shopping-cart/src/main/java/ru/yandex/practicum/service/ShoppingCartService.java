@@ -164,8 +164,7 @@ public class ShoppingCartService {
 
         if (cartItem == null) {
             throw new NoProductsInShoppingCartException(
-                    "Товар не найден в корзине: " + request.getProductId()
-            );
+                    String.format("Товар не найден в корзине: %s", request.getProductId()));
         }
 
         int newQuantity = request.getNewQuantity().intValue();
@@ -216,8 +215,7 @@ public class ShoppingCartService {
                 .orElseThrow(() -> {
                     log.warn("Активная корзина не найдена для пользователя: {}", username);
                     return new NotAuthorizedUserException(
-                            "Активная корзина не найдена для пользователя: " + username
-                    );
+                            String.format("Активная корзина не найдена для пользователя: %s", username));
                 });
     }
 
@@ -277,8 +275,7 @@ public class ShoppingCartService {
             if (entry.getValue() == null || entry.getValue() <= 0) {
                 log.warn("Количество должно быть положительным для товара: {}", entry.getKey());
                 throw new IllegalArgumentException(
-                        "Количество должно быть положительным для товара: " + entry.getKey()
-                );
+                        String.format("Количество должно быть положительным для товара: %s", entry.getKey()));
             }
         }
     }
