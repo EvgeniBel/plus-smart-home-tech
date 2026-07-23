@@ -65,7 +65,7 @@ public class ProductService {
      */
     public ProductDto getProduct(UUID productId) {
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new ProductNotFoundException("Товар не найден с ID: " + productId));
+                .orElseThrow(() -> new ProductNotFoundException(String.format("Товар не найден с ID: %s", productId)));
         return productMapper.toDto(product);  // ← просто вернуть товар
     }
 
@@ -109,7 +109,7 @@ public class ProductService {
         log.info("Обновление товара с ID: {}", productDto.getProductId());
 
         Product existing = productRepository.findById(productDto.getProductId())
-                .orElseThrow(() -> new ProductNotFoundException("Товар не найден с ID: " + productDto.getProductId()));
+                .orElseThrow(() -> new ProductNotFoundException(String.format("Товар не найден с ID: %s", productDto.getProductId())));
 
         boolean updated = false;
 
@@ -164,8 +164,7 @@ public class ProductService {
                 .orElseThrow(() -> {
                     log.error("Товар не найден для деактивации: {}", productId);
                     return new ProductNotFoundException(
-                            "Товар не найден с ID: " + productId
-                    );
+                            String.format("Товар не найден с ID: %s", productId));
                 });
 
         if (product.getProductState() == ProductState.DEACTIVATE) {
@@ -196,8 +195,7 @@ public class ProductService {
                     log.error("Товар не найден для обновления статуса количества: {}",
                             request.getProductId());
                     return new ProductNotFoundException(
-                            "Товар не найден с ID: " + request.getProductId()
-                    );
+                            String.format("Товар не найден с ID: %s", request.getProductId()));
                 });
 
         log.debug("Статус количества товара {} обновлен: {} → {}",

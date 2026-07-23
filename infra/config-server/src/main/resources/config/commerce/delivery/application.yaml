@@ -1,0 +1,23 @@
+server:
+  port: 0
+
+logging:
+  level:
+    ru.yandex.practicum: DEBUG
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/shopping_cart
+    username: postgres
+    password: password
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        show_sql: false
+        use_sql_comments: true
+    open-in-view: false

@@ -10,8 +10,10 @@ spring:
     config:
       server:
         native:
-          searchLocations: classpath:config/telemetry/{application},
-            classpath:config/commerce/{application}
+          searchLocations:
+            - classpath:config/telemetry/{application}
+            - classpath:config/commerce/{application}
+            - classpath:config/infra/{application}
 eureka:
   client:
     serviceUrl:
